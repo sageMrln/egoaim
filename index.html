@@ -88,8 +88,12 @@ en: {
   paused: 'Paused', restart: 'Restart', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
   rawNote: '   (raw input not available, so turn off "Enhance pointer precision" in Windows)',
   tiers: ['Beginner', 'Intermediate', 'Advanced', 'Saint', 'King', 'Emperor', 'God'], tier: t => 'Rank: ' + t,
-  tierNote: 'Your rank comes from your stars and how few attempts each stage took. Three stars on the first try is perfect.', tierUp: (a, b) => `${a} &rarr; ${b}`,
+  tierNote: 'Your rank comes from your best Rank Test, measured against real players. God is pro esports level (about the top 0.5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
   lang: 'Magyar',
+  rt: 'Rank Test', rtGo: 'Rank Test', rtSub: 'The Rank Test: 5 reaction clicks, 20 flicks and 12 seconds of tracking, each compared with real players. God is pro esports level, about the top 0.5%. Your best test counts.',
+  rtReact: (h, n) => `REACTION ${h}/${n}: click the moment the target appears`, rtFalse: 'too early',
+  rtRes: (ms, fl, on) => `Reaction ${ms} ms &middot; ${fl} s per flick &middot; ${on} on target`, rtTop: p => `Top ${p} of players`, rtNone: 'No rank yet. Take the Rank Test.',
+  rtBest: (t, p) => `Your best: ${t}, top ${p}`,
   share: 'Challenge friends', copied: 'Copied. Paste it to your friends.', pts: p => p + ' pts',
   shareTxt: (t, p, st, link) => `I am ${t} in EGO AIM with ${p} points and ${st} stars. Beat me: ${link}`,
   board: 'Friends board', you: 'you', chal: (n, t, p) => `<b>${n}</b> challenges you: ${t}, ${p} points. Clear stages to beat them.`,
@@ -124,8 +128,12 @@ hu: {
   paused: 'Szünet', restart: 'Újrakezdés', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
   rawNote: '   (a nyers egérjel nem elérhető, ezért kapcsold ki a Windows egérbeállításaiban a mutatópontosság növelését)',
   tiers: ['Kezdő', 'Középhaladó', 'Haladó', 'Szent', 'Király', 'Császár', 'Isten'], tier: t => 'Rang: ' + t,
-  tierNote: 'A rangod a csillagaidból jön, és abból, hány próbálkozás kellett egy-egy szinthez. Három csillag elsőre a tökéletes.', tierUp: (a, b) => `${a} &rarr; ${b}`,
+  tierNote: 'A rangod a legjobb Rangtesztedből jön, valódi játékosokhoz mérve. Az Isten profi e-sport szint (nagyjából a legjobb 0,5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
   lang: 'English',
+  rt: 'Rangteszt', rtGo: 'Rangteszt', rtSub: 'A Rangteszt: 5 reakciókattintás, 20 célravetés és 12 másodperc követés, mindegyik valódi játékosokhoz mérve. Az Isten profi e-sport szint, nagyjából a legjobb 0,5%. A legjobb teszted számít.',
+  rtReact: (h, n) => `REAKCIÓ ${h}/${n}: kattints, amint megjelenik a cél`, rtFalse: 'túl korán',
+  rtRes: (ms, fl, on) => `Reakció ${ms} ms &middot; ${fl} mp célonként &middot; ${on} a célon`, rtTop: p => `A játékosok legjobb ${p}-a`, rtNone: 'Még nincs rangod. Csináld meg a Rangtesztet.',
+  rtBest: (t, p) => `A legjobbad: ${t}, legjobb ${p}`,
   share: 'Kihívom a barátaimat', copied: 'Kimásolva. Küldd el a barátaidnak.', pts: p => p + ' pont',
   shareTxt: (t, p, st, link) => `${t} vagyok az EGO AIM-ben, ${p} ponttal és ${st} csillaggal. Győzz le: ${link}`,
   board: 'Baráti ranglista', you: 'te', chal: (n, t, p) => `<b>${n}</b> kihív téged: ${t}, ${p} pont. Teljesíts szinteket, hogy legyőzd.`,
@@ -140,11 +148,33 @@ const ui = document.getElementById('ui'), cv = document.getElementById('c'), hud
 const DB = JSON.parse(localStorage.egopub_players || '{}');
 let NAME = localStorage.ego_name || '', RAW = false, MUTE = localStorage.ego_mute === '1';
 function me() { const P = DB[NAME] = DB[NAME] || {sens: START_SENS, stars: {}, cleared: 0, fails: {}, sel: [], day: '', today: 0}; P.tries = P.tries || {}; P.first = P.first || {}; return P; }
-// Seven ranks: per cleared stage, 10 points a star minus 3 for every extra attempt before the first clear; the average decides.
-const TIER_AT = [0, 8, 13, 17, 21, 25, 28];
-function tierOf(P) { const k = Object.keys(P.first); if (!k.length) return -1;
-  const avg = k.reduce((a, i) => a + Math.max(0, 10 * (P.stars[i] || 0) - 3 * (P.first[i] - 1)), 0) / k.length;
-  let t = 0; TIER_AT.forEach((x, j) => { if (avg >= x) t = j; }); return t; }
+// Seven ranks from the Rank Test, as shares of real players from the top. God = a pro esports profile: aim at the model's skilled
+// end plus a 170 ms reaction scores z 2.61, about the top 0.45% (Aimlabs: its elite ranks are the top 0.17% of 270,106 ranked PC
+// players); Emperor top 3% (Aimlabs Topaz); King top 10%; Saint top 25% (Aimlabs
+// Platinum); Advanced top 40% (40% sit in Aimlabs Iron); Intermediate top 60% (around the median); Beginner the rest.
+// Reaction: Human Benchmark, median about 270 ms and about 187 ms at the 89th percentile, so log-normal with sigma 0.30.
+// Flick and tracking have no public population data: rankcal.js runs simulated players (sim.js model) through the same test.
+// ASSUMED: the model's beginner end (330 ms reaction) is the 25th percentile and its skilled end (170 ms, the reported pro
+// range) the top 0.2%. Aim counts 80%, reaction 20%: pros stand out in aim far more than in raw reaction.
+const RK_Z = [-0.253, 0.253, 0.674, 1.282, 1.881, 2.61];
+const RK_FL = /*FL*/[2.148, 1.979, 1.837, 1.68, 1.553, 1.412, 1.275, 1.157, 1.035, 0.916, 0.809]/*FL*/, RK_ON = /*ON*/[0.018, 0.028, 0.029, 0.03, 0.103, 0.219, 0.339, 0.521, 0.672, 0.707, 0.735]/*ON*/;
+function zOf(tab, x) { const n = tab.length - 1; let i = 0; while (i < n - 1 && (tab[i + 1] - x) * (tab[n] - tab[0]) <= 0) i++;
+  const s = Math.max(-1, Math.min(2, (i + (x - tab[i]) / (tab[i + 1] - tab[i])) / n)); return -0.674 + s * 3.552; }
+const Phi = z => { const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2), q = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - q : q; };
+function rkScore(r) { const z = 0.2 * Math.log(270 / Math.max(80, Math.min(2000, r.rt))) / 0.30 + 0.4 * zOf(RK_FL, Math.max(0.15, Math.min(10, r.fl))) + 0.4 * zOf(RK_ON, Math.max(0, Math.min(1, r.on)));
+  let t = 0; RK_Z.forEach((x, j) => { if (z >= x) t = j + 1; }); return {z, t, top: 1 - Phi(z)}; }
+const topTxt = p => { p = Math.max(1e-4, p); const x = String(p < 0.01 ? (p * 100).toFixed(2) : p < 0.1 ? (p * 100).toFixed(1) : Math.round(p * 100)); return (LANG === 'hu' ? x.replace('.', ',') : x) + '%'; };
+function tierOf(P) { return P.rk ? rkScore(P.rk).t : -1; }
+function rankTest() { play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6}, {k: 'track', s: 12, r: 1.8, v: 1.3}], L.rt, me().sens, Date.now(), judgeRank); }
+function judgeRank(res, why) {
+  if (why) return show(`<div class="tag">${L.rt}</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
+  const a = res[0].rts.slice().sort((x, y) => x - y), r = {rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3)};
+  const P = me(), sc = rkScore(r); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
+  const b = rkScore(P.rk);
+  show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p>
+  ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
+  <button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
+}
 // Points: the same per-stage score that sets the rank, summed (max 390).
 const ptsOf = P => Object.keys(P.first).reduce((a, i) => a + Math.max(0, 10 * (P.stars[i] || 0) - 3 * (P.first[i] - 1)), 0);
 const starsOf = P => Object.values(P.stars).reduce((a, x) => a + x, 0);
@@ -175,7 +205,7 @@ const api = (path, body) => fetch(BOARD.replace(/\/$/, '') + path, {method: 'POS
   .then(r => r.json().then(o => (o.status = r.status, o)));
 function push(now) { clearTimeout(PUSH); if (!ONLINE || !DB[NAME]) return Promise.resolve(); const go = () => api('/save', {n: NAME, pw: PW, data: DB[NAME]}).catch(() => {});
   if (now) return go(); PUSH = setTimeout(go, 2500); return Promise.resolve(); }   // saves wait 2.5 s, the map flushes at once
-const tierHtml = P => { const t = tierOf(P); return t < 0 ? '' : `<div class="rank" style="font-size:26px">${L.tier(L.tiers[t])}</div><div class="dim">${L.tiers.map((x, j) => j === t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div>`; };
+const tierHtml = P => { const t = tierOf(P); return t < 0 ? `<div class="hype" style="font-size:17px">${L.rtNone}</div>` : `<div class="rank" style="font-size:26px">${L.tier(L.tiers[t])}</div><div class="dim">${L.tiers.map((x, j) => j === t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div>`; };
 function save() { localStorage.egopub_players = JSON.stringify(DB); push(); }
 const ease = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 1));
 const rankOf = c => c ? RANKS[c - 1] : 300;
@@ -219,6 +249,7 @@ function enter(kind) {
     ONLINE = true; if (o.n && o.n !== NAME) { DB[o.n] = DB[NAME]; delete DB[NAME]; NAME = o.n; localStorage.ego_name = NAME; }
     const here = DB[NAME];   // keep whichever copy has more stages, the server's wins a tie
     if (o.data && (!here || (o.data.cleared | 0) >= (here.cleared | 0))) DB[NAME] = o.data;
+    if (here && here.rk && (!DB[NAME].rk || rkScore(here.rk).z > rkScore(DB[NAME].rk).z)) DB[NAME].rk = here.rk;   // the better Rank Test survives
     go();
   }, () => { ONLINE = false; alert(L.offline); go(); });
 }
@@ -228,7 +259,7 @@ function map() {
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
   show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(rankOf(P.cleared))}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>
   <div class="grid">${tiles}</div>
-  <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
+  <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
 function goalText(i) {
   const s = STAGES[i], e = ease(i), d = s.d.map(x => scaled(x, e));
@@ -353,6 +384,7 @@ const D = () => run.drills[run.di];
 function startDrill(now) {
   const d = D(); run.ds = {t0: now, hits: 0, misses: 0, on: 0, frames: 0, left: d.lives || 0}; T = [];
   if (d.k === 'flick') fill(now);
+  else if (d.k === 'react') { run.ds.rts = []; run.ds.at = now + 1200 + rnd() * 2000; }
   else if (d.k === 'move') { PL = [0, 0]; run.pv = 4; spawnMover(now); }
   else T = [{y: cam.y + R(8), p: 0, r: R(d.r), v: R(45) * d.v}];
 }
@@ -370,10 +402,11 @@ function spawnMover(now) { const side = rnd() < .5 ? -1 : 1, a = cam.y + side * 
 function aimMove(e) { cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); }
 function finishDrill(now) {
   const d = D(), s = run.ds, el = (now - s.t0) / 1000;
-  run.res.push({k: d.k, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0});
+  run.res.push({k: d.k, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0, rts: s.rts || null});
   run.di++; if (run.di >= run.drills.length) return endPlay(null);
   startDrill(now);
 }
+function reactHit(now, ms) { const s = run.ds; s.rts.push(ms); s.hits++; T = []; s.at = now + 1200 + rnd() * 2000; if (s.hits >= D().n) finishDrill(now); }
 function endPlay(why) { mode = ''; T = []; cancelAnimationFrame(raf); unlock(); run.done(run.res, why); }
 function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -393,6 +426,10 @@ function tick(now) {
     if (d.s && el > d.s) return endPlay(L.why.cap);
     fill(now);
     h += L.hudHits(s.hits, d.n) + '   ' + f1(el + 0.25 * s.misses) + ' s' + (d.s ? ' / ' + Math.round(d.s) + ' s' : '') + (d.lives ? '   ' + L.lives + ' ' + '●'.repeat(Math.max(0, s.left)) : '');
+  } else if (d.k === 'react') {
+    if (!T.length && now >= s.at) T = [{y: cam.y, p: cam.p, r: R(d.r), t0: now}];
+    else if (T.length && now - T[0].t0 > 1500) { reactHit(now, 1500); if (mode !== 'aim') return; }
+    h += L.rtReact(s.hits, d.n) + (s.misses ? '   ' + L.rtFalse + ' x' + s.misses : '');
   } else if (d.k === 'move') {
     if (Math.random() < dt * 1.2) run.pv = -run.pv;
     PL[0] += run.pv * dt * Math.cos(cam.y); PL[1] -= run.pv * dt * Math.sin(cam.y);
@@ -414,6 +451,9 @@ function tick(now) {
 }
 function aimDown() {
   const d = D(); if (d.k === 'track') return;
+  if (d.k === 'react') { const now = performance.now(), s = run.ds, ms = T.length ? now - T[0].t0 : 0;
+    if (ms < 100) { s.misses++; T = []; s.at = now + 1200 + rnd() * 2000; snd(140, 0.1, 'sawtooth', 0.04); return; }   // too early: under 100 ms is a guess
+    FX.push({y: T[0].y, p: T[0].p, r: T[0].r, t0: now}); snd(780, 0.09); return reactHit(now, ms); }
   const now = performance.now(), s = run.ds, t = T.find(t => angTo(t.y, t.p) < t.r);
   if (!t) { s.misses++; run.combo = 0; snd(140, 0.1, 'sawtooth', 0.04); return; }
   s.hits++; run.combo++; FX.push({y: t.y, p: t.p, r: t.r, t0: now}); snd(520 + 25 * Math.min(run.combo, 24), 0.09);
