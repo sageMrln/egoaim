@@ -90,7 +90,7 @@ en: {
   lang: 'Magyar',
   rt: 'King Trials', rtGo: 'King Trials', rtSub: 'The King Trials: 5 reaction clicks, 20 flicks and 20 seconds of tracking, each compared with real players. God is pro esports level, about the top 0.5%. Your best test counts.',
   rtReact: (h, n) => `REACTION ${h}/${n}: click the moment the target appears`, rtFalse: 'too early',
-  rtRes: (ms, fl, on) => `Reaction ${ms} ms &middot; ${fl} s per flick &middot; ${on} on target`, rtTop: p => `Top ${p} of players`, rtNone: 'No rank yet. Take the King Trials.',
+  rtRes: (ms, fl, on) => `Reaction ${ms} ms &middot; ${fl} s per flick &middot; ${on} on target`, rtTop: p => `Top ${p} of players`, rtNone: 'No rank yet. Take the King Trials.', rtWhy: (a, b, c) => `Reaction: top ${a} of 70,940 Human Benchmark results &middot; Flicks: top ${b} of 78,563 KovaaK's players &middot; Tracking: top ${c} of 105,404 KovaaK's players`, rtSrc: 'See the data sources',
   rtBest: (t, p) => `Your best: ${t}, top ${p}`,
   share: 'Challenge friends', copied: 'Copied. Paste it to your friends.', pts: p => p + ' pts',
   shareTxt: (t, p, st, link) => `I am ${t} in North God Aim with ${p} points and ${st} stars. Beat me: ${link}`,
@@ -130,7 +130,7 @@ hu: {
   lang: 'English',
   rt: 'Rangteszt', rtGo: 'Rangteszt', rtSub: 'A Rangteszt: 5 reakciókattintás, 20 célravetés és 20 másodperc követés, mindegyik valódi játékosokhoz mérve. Az Isten profi e-sport szint, nagyjából a legjobb 0,5%. A legjobb teszted számít.',
   rtReact: (h, n) => `REAKCIÓ ${h}/${n}: kattints, amint megjelenik a cél`, rtFalse: 'túl korán',
-  rtRes: (ms, fl, on) => `Reakció ${ms} ms &middot; ${fl} mp célonként &middot; ${on} a célon`, rtTop: p => `A játékosok legjobb ${p}-a`, rtNone: 'Még nincs rangod. Csináld meg a Rangtesztet.',
+  rtRes: (ms, fl, on) => `Reakció ${ms} ms &middot; ${fl} mp célonként &middot; ${on} a célon`, rtTop: p => `A játékosok legjobb ${p}-a`, rtNone: 'Még nincs rangod. Csináld meg a Rangtesztet.', rtWhy: (a, b, c) => `Reakció: a Human Benchmark 70 940 eredményének legjobb ${a}-a &middot; Célravetés: a KovaaK's 78 563 játékosának legjobb ${b}-a &middot; Követés: a KovaaK's 105 404 játékosának legjobb ${c}-a`, rtSrc: 'Adatforrások',
   rtBest: (t, p) => `A legjobbad: ${t}, legjobb ${p}`,
   share: 'Kihívom a barátaimat', copied: 'Kimásolva. Küldd el a barátaidnak.', pts: p => p + ' pont',
   shareTxt: (t, p, st, link) => `${t} vagyok a North God Aimben, ${p} ponttal és ${st} csillaggal. Győzz le: ${link}`,
@@ -156,6 +156,8 @@ function zOf(tab, x, zs = RK_PZ) { const n = tab.length - 1, up = tab[0] > tab[n
 const Phi = z => { const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2), q = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - q : q; };
 function rkScore(r) { const z = 0.2 * zOf(RK_RT, Math.max(80, Math.min(2000, r.rt)), RK_RTZ) + 0.4 * zOf(r.v === 2 ? RK_FL : RK_FL1, Math.max(0.15, Math.min(10, r.fl))) + 0.4 * zOf(r.v === 2 ? RK_ON : RK_ON1, Math.max(0, Math.min(1, r.on)));
   let t = 0; RK_Z.forEach((x, j) => { if (z >= x) t = j + 1; }); return {z, t, top: 1 - Phi(z)}; }
+function rkWhy(r) { const v2 = r.v === 2, t = z => topTxt(1 - Phi(z));
+  return L.rtWhy(t(zOf(RK_RT, Math.max(80, Math.min(2000, r.rt)), RK_RTZ)), t(zOf(v2 ? RK_FL : RK_FL1, Math.max(0.15, Math.min(10, r.fl)))), t(zOf(v2 ? RK_ON : RK_ON1, Math.max(0, Math.min(1, r.on))))) + ` &middot; <a href="#sources" onclick="sources();return false">${L.rtSrc}</a>`; }
 const topTxt = p => { p = Math.max(1e-4, p); const x = String(p < 0.01 ? (p * 100).toFixed(2) : p < 0.1 ? (p * 100).toFixed(1) : Math.round(p * 100)); return (LANG === 'hu' ? x.replace('.', ',') : x) + '%'; };
 const KEPT = {petra: 1};
 const bestRk = P => [P.rk, ...(P.hist || [])].filter(x => x && x.rt > 0 && x.fl > 0 && x.on >= 0).reduce((b, x) => !b || rkScore(x).z > rkScore(b).z ? x : b, null);
@@ -166,7 +168,7 @@ function judgeRank(res, why) {
   const a = res[0].rts.slice().sort((x, y) => x - y), r = {pf: perfNow(), rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3), v: 2};
   const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), v: r.v, rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT}]).slice(-40); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; P.rk = bestRk(P) || P.rk; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
   const b = rkScore(P.rk);
-  show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
+  show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${rkWhy(r)}</p><p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
   ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
   ${CT ? `<button id="go" onclick="CT='';course()">${L.co.back}</button><button class="alt" onclick="rankTest()">${L.retry}</button>` : `<button id="go" onclick="rankTest()">${L.retry}</button>`}<button class="alt" onclick="CT='';map()">${L.map}</button>`);
 }
