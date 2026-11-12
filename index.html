@@ -156,7 +156,7 @@ function rankTest() { play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6
 function judgeRank(res, why) {
   if (why) return show(`<div class="tag">${L.rt}</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
   const a = res[0].rts.slice().sort((x, y) => x - y), r = {rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3)};
-  const P = me(), sc = rkScore(r); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
+  const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT}]).slice(-40); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
   const b = rkScore(P.rk);
   show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p>
   ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
@@ -368,7 +368,7 @@ const D = () => run.drills[run.di];
 function startDrill(now) {
   const d = D(); run.ds = {t0: now, hits: 0, misses: 0, on: 0, frames: 0, left: d.lives || 0}; T = [];
   if (d.k === 'flick') fill(now);
-  else if (d.k === 'react') { run.ds.rts = []; run.ds.at = now + 1200 + rnd() * 2000; }
+  else if (d.k === 'react') { run.ds.rts = []; run.ds.at = now + foreperiod(); }
   else if (d.k === 'move') { PL = [0, 0]; run.pv = 4; spawnMover(now); }
   else if (XK[d.k]) XK[d.k].start(now, d);
   else T = [{y: cam.y + R(8), p: 0, r: R(d.r), v: R(45) * d.v}];
@@ -390,7 +390,7 @@ function finishDrill(now) {
   run.di++; if (run.di >= run.drills.length) return endPlay(null);
   startDrill(now);
 }
-function reactHit(now, ms) { const s = run.ds; s.rts.push(ms); s.hits++; T = []; s.at = now + 1200 + rnd() * 2000; if (s.hits >= D().n) finishDrill(now); }
+const foreperiod = () => 1000 + Math.min(3500, -Math.log(1 - rnd()) * 900); function reactHit(now, ms) { const s = run.ds; s.rts.push(ms); s.hits++; T = []; s.at = now + foreperiod(); if (s.hits >= D().n) finishDrill(now); }
 function endPlay(why) { mode = ''; T = []; FIRE = false; cancelAnimationFrame(raf); unlock(); run.done(run.res, why); }
 function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -411,7 +411,7 @@ function tick(now) {
     fill(now);
     h += L.hudHits(s.hits, d.n) + '   ' + f1(el + 0.25 * s.misses) + ' s' + (d.s ? ' / ' + Math.round(d.s) + ' s' : '') + (d.lives ? '   ' + L.lives + ' ' + '●'.repeat(Math.max(0, s.left)) : '');
   } else if (d.k === 'react') {
-    if (!T.length && now >= s.at) T = [{y: cam.y, p: cam.p, r: R(d.r), t0: now}];
+    if (!T.length && now >= s.at) { const a = rnd() * 2 * Math.PI, o = R(1.5 + rnd() * 1.5); T = [{y: cam.y + Math.cos(a) * o, p: cam.p + Math.sin(a) * o, r: R(d.r), t0: now}]; }
     else if (T.length && now - T[0].t0 > 1500) { reactHit(now, 1500); if (mode !== 'aim') return; }
     h += L.rtReact(s.hits, d.n) + (s.misses ? '   ' + L.rtFalse + ' x' + s.misses : '');
   } else if (d.k === 'move') {
@@ -440,7 +440,7 @@ function aimDown() {
   const d = D(); if (XK[d.k]) return XK[d.k].down(performance.now(), d, run.ds);
   if (d.k === 'track') return;
   if (d.k === 'react') { const now = performance.now(), s = run.ds, ms = T.length ? now - T[0].t0 : 0;
-    if (ms < 100) { s.misses++; T = []; s.at = now + 1200 + rnd() * 2000; snd(140, 0.1, 'sawtooth', 0.04); return; }
+    if (ms < 100) { s.misses++; if (s.misses > 1) s.rts.push(1000); T = []; s.at = now + foreperiod(); snd(140, 0.1, 'sawtooth', 0.04); return; }
     FX.push({y: T[0].y, p: T[0].p, r: T[0].r, t0: now}); snd(780, 0.09); return reactHit(now, ms); }
   const now = performance.now(), s = run.ds, t = T.find(t => angTo(t.y, t.p) < t.r);
   if (!t) { s.misses++; run.combo = 0; snd(140, 0.1, 'sawtooth', 0.04); return; }
@@ -740,6 +740,9 @@ function lessonDone(i, res, why) {
   const P = me(), C = P.co = P.co || {}, d = run.drills[run.di], s = run.ds;
   const part = why && d ? [{k: d.k, n: d.n, time: 0, misses: s.misses, on: s.on / Math.max(1, s.frames), x: s.x}] : [];
   const ok = !why && (!LESSONS[i].ok || LESSONS[i].ok(res)), tips = tipOf(res.concat(part)), last = i + 1 >= LESSONS.length;
+  const sx = x => x ? {st: x.stops && x.stops.length ? Math.round(x.stops.reduce((a, b) => a + b, 0) / x.stops.length) : undefined, ms: x.ms, pre: x.pre && x.pre.length ? +(x.pre.reduce((a, b) => a + b, 0) / x.pre.length).toFixed(1) : undefined, shot: x.shot, mv: x.mv != null ? +x.mv.toFixed(2) : undefined, ah: x.an ? +(x.ah / x.an).toFixed(2) : undefined} : undefined;
+  P.lr = (P.lr || []).concat([{at: Date.now(), i, ok, why: why ? 1 : 0, sens: +P.sens.toFixed(3), d: res.concat(part).map(r => ({k: r.k, t: +(+r.time).toFixed(2), m: r.misses, on: +(+r.on).toFixed(3), x: sx(r.x)}))}]).slice(-40);
+  if (!ok) save();
   if (ok) { C[i] = (C[i] || 0) + 1; save(); tune([523, 659, 784, 1047], 110, 0.3); } else tune([392, 330, 262], 130, 0.22);
   show(`<div class="tag">${i + 1}. ${L.co.ls[i].n}</div>${ok ? `<div class="clear">${L.co.passed}</div>` : `<div class="fail">${L.notYet}</div><p>${why || L.co.goalWas(L.co.ls[i].goal)}</p>`}
   ${res.length ? `<p class="dim">${sumRes(res)}</p>` : ''}${tips.map(t => `<p>${t}</p>`).join('')}
