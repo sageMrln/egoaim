@@ -87,9 +87,13 @@ en: {
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} on target`, combo: c => `COMBO x${c}`, lives: 'Lives',
   paused: 'Paused', restart: 'Restart', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
   rawNote: '   (raw input not available, so turn off "Enhance pointer precision" in Windows)',
-  tiers: ['Bench', 'Reserve', 'Starter', 'Ace', 'Prodigy', 'World Class', 'Egoist'], tier: t => 'Rank: ' + t,
+  tiers: ['Beginner', 'Intermediate', 'Advanced', 'Saint', 'King', 'Emperor', 'God'], tier: t => 'Rank: ' + t,
   tierNote: 'Your rank comes from your stars and how few attempts each stage took. Three stars on the first try is perfect.', tierUp: (a, b) => `${a} &rarr; ${b}`,
   lang: 'Magyar',
+  share: 'Challenge friends', copied: 'Copied. Paste it to your friends.', pts: p => p + ' pts',
+  shareTxt: (t, p, st, link) => `I am ${t} in EGO AIM with ${p} points and ${st} stars. Beat me: ${link}`,
+  board: 'Friends board', you: 'you', chal: (n, t, p) => `<b>${n}</b> challenges you: ${t}, ${p} points. Clear stages to beat them.`,
+  bHead: ['Player', 'Rank', 'Points', 'Stars', 'Stages'],
 },
 hu: {
   sub: 'Blue Lock-célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig, az első érintéstől a teljes nyomásig.',
@@ -119,9 +123,13 @@ hu: {
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} a célon`, combo: c => `KOMBÓ x${c}`, lives: 'Életek',
   paused: 'Szünet', restart: 'Újrakezdés', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
   rawNote: '   (a nyers egérjel nem elérhető, ezért kapcsold ki a Windows egérbeállításaiban a mutatópontosság növelését)',
-  tiers: ['Kispad', 'Tartalék', 'Kezdő', 'Ász', 'Csodagyerek', 'Világklasszis', 'Egoista'], tier: t => 'Rang: ' + t,
+  tiers: ['Kezdő', 'Középhaladó', 'Haladó', 'Szent', 'Király', 'Császár', 'Isten'], tier: t => 'Rang: ' + t,
   tierNote: 'A rangod a csillagaidból jön, és abból, hány próbálkozás kellett egy-egy szinthez. Három csillag elsőre a tökéletes.', tierUp: (a, b) => `${a} &rarr; ${b}`,
   lang: 'English',
+  share: 'Kihívom a barátaimat', copied: 'Kimásolva. Küldd el a barátaidnak.', pts: p => p + ' pont',
+  shareTxt: (t, p, st, link) => `${t} vagyok az EGO AIM-ben, ${p} ponttal és ${st} csillaggal. Győzz le: ${link}`,
+  board: 'Baráti ranglista', you: 'te', chal: (n, t, p) => `<b>${n}</b> kihív téged: ${t}, ${p} pont. Teljesíts szinteket, hogy legyőzd.`,
+  bHead: ['Játékos', 'Rang', 'Pont', 'Csillag', 'Szint'],
 }};
 const L = TX[LANG];
 
@@ -137,6 +145,26 @@ const TIER_AT = [0, 8, 13, 17, 21, 25, 28];
 function tierOf(P) { const k = Object.keys(P.first); if (!k.length) return -1;
   const avg = k.reduce((a, i) => a + Math.max(0, 10 * (P.stars[i] || 0) - 3 * (P.first[i] - 1)), 0) / k.length;
   let t = 0; TIER_AT.forEach((x, j) => { if (avg >= x) t = j; }); return t; }
+// Points: the same per-stage score that sets the rank, summed (max 390).
+const ptsOf = P => Object.keys(P.first).reduce((a, i) => a + Math.max(0, 10 * (P.stars[i] || 0) - 3 * (P.first[i] - 1)), 0);
+const starsOf = P => Object.values(P.stars).reduce((a, x) => a + x, 0);
+const clean = x => String(x).replace(/[^\p{L}\p{N} _.-]/gu, '').slice(0, 24) || '?';
+const FR = JSON.parse(localStorage.egopub_friends || '{}');
+function card(P) { return {n: NAME, t: Math.max(0, tierOf(P)), p: ptsOf(P), s: starsOf(P), c: P.cleared}; }
+function fromCode(code) {   // untrusted: anyone can craft a link, so every field is cleaned and clamped
+  try { const o = JSON.parse(decodeURIComponent(escape(atob(code.replace(/-/g, '+').replace(/_/g, '/')))));
+    const c = Math.max(0, Math.min(13, o.c | 0));   // points and stars can never exceed what that many stages can give
+    return {n: clean(o.n), t: Math.max(0, Math.min(6, o.t | 0)), p: Math.max(0, Math.min(30 * c, o.p | 0)), s: Math.max(0, Math.min(3 * c, o.s | 0)), c}; } catch (e) { return null; } }
+const toCode = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+let CHAL = null;
+if (location.hash.startsWith('#c=')) { CHAL = fromCode(location.hash.slice(3)); if (CHAL) { FR[CHAL.n] = CHAL; localStorage.egopub_friends = JSON.stringify(FR); } history.replaceState(null, '', location.pathname); }
+function shareIt() { const P = me(), link = location.origin + location.pathname + '#c=' + toCode(card(P));
+  const txt = L.shareTxt(L.tiers[Math.max(0, tierOf(P))], ptsOf(P), starsOf(P), link);
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { document.getElementById('shr').textContent = L.copied; }, () => prompt(L.share, txt)); }
+function boardHtml(P) { const rows = Object.values(FR).filter(f => f.n !== NAME).concat([Object.assign(card(P), {me: true})]).sort((a, b) => b.p - a.p || b.s - a.s);
+  if (rows.length < 2) return '';
+  return `<h2 style="margin-top:18px;font-size:20px">${L.board}</h2><table style="width:100%;font-size:15px;border-collapse:collapse">` + `<tr class="dim"><td>#</td>${L.bHead.map(h => `<td>${h}</td>`).join('')}</tr>` +
+    rows.map((f, j) => `<tr style="${f.me ? 'color:var(--acc2);font-weight:700' : ''}"><td>${j + 1}</td><td>${clean(f.n)}${f.me ? ' (' + L.you + ')' : ''}</td><td>${L.tiers[f.t]}</td><td>${f.p}</td><td>${f.s}</td><td>${f.c}/13</td></tr>`).join('') + '</table>'; }
 const tierHtml = P => { const t = tierOf(P); return t < 0 ? '' : `<div class="rank" style="font-size:26px">${L.tier(L.tiers[t])}</div><div class="dim">${L.tiers.map((x, j) => j === t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div>`; };
 function save() { localStorage.egopub_players = JSON.stringify(DB); }
 const ease = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 1));
@@ -160,7 +188,7 @@ const tune = (fs, gap, d) => fs.forEach((f, i) => setTimeout(() => snd(f, d, 'tr
 // ---------- screens ----------
 function intro() {
   const P = NAME && DB[NAME];
-  show(`<div class="tag">Blue Lock</div><h1>EGO <span>AIM</span></h1><p>${L.sub}</p>
+  show(`<div class="tag">Blue Lock</div><h1>EGO <span>AIM</span></h1>${CHAL ? `<div class="hype" style="font-size:19px">${L.chal(CHAL.n, L.tiers[CHAL.t], CHAL.p)}</div>` : ''}<p>${L.sub}</p>
   <p>${L.name}: <input id="nm" value="${NAME}" placeholder="Player" maxlength="24"> &nbsp; ${L.game}: <select id="gm" onchange="pickGame(this.value)">${GAMES.map((g, j) => `<option value="${j}"${j === GAME ? ' selected' : ''}>${g[0]}</option>`).join('')}</select>
   &nbsp; ${L.sens}: <input id="sens" value="${P ? P.sens.toFixed(2) : START_SENS}"></p>
   <p class="dim">${L.sensNote}</p>
@@ -181,9 +209,9 @@ function map() {
   const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
   const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
-  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(rankOf(P.cleared))}</div><p class="dim">${L.tierNote}</p><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>
+  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(rankOf(P.cleared))}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>
   <div class="grid">${tiles}</div>
-  <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button>`);
+  <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button>${boardHtml(P)}`);
 }
 function goalText(i) {
   const s = STAGES[i], e = ease(i), d = s.d.map(x => scaled(x, e));
