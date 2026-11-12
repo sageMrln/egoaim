@@ -21,10 +21,10 @@ select,input{background:#070b14;color:var(--txt);border:1px solid var(--line);bo
 .tile b{display:block;font-size:15px;color:#fff}.tile .s{color:var(--gold);font-size:18px;letter-spacing:2px}.tile.lock{opacity:.35;cursor:default}.tile.next{border-color:var(--acc2);box-shadow:0 0 14px #00d8ff55}
 .bar{height:8px;background:#141d30;border-radius:4px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
 @keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
-#c{position:absolute;inset:0;display:none}
+#c,#c3{position:absolute;inset:0;display:none}
 #hud{position:absolute;top:12px;left:0;right:0;text-align:center;font-size:20px;color:#dfe7f5;display:none;pointer-events:none;text-shadow:0 1px 4px #000;font-weight:600;letter-spacing:.5px}
 </style></head><body>
-<canvas id="c"></canvas><div id="hud"></div><div id="ui"></div>
+<canvas id="c3"></canvas><canvas id="c"></canvas><div id="hud"></div><div id="ui"></div>
 <script>
 if (top !== self) top.location = self.location;
 'use strict';
@@ -81,7 +81,7 @@ en: {
   setNo: (p, d) => `Last time you got ${p}, ${d} apart, so it has not settled yet. Run it again another day; within 10% means settled.`,
   keep: 'Then keep it: play with this number for at least a week before you change it.', train: 'Training begins',
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} on target`, combo: c => `COMBO x${c}`, lives: 'Lives',
-  paused: 'Paused', restart: 'Restart', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
+  paused: 'Paused', restart: 'Restart', lockFail: 'The browser did not lock the mouse yet. Press Restart once more.', compat: c => 'Compatibility mode: ' + (c ? 'ON' : 'OFF'), compatNote: 'View will not turn, or the mouse feels wrong? Turn compatibility mode on: plain mouse input and plain drawing.', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
   rawNote: '   (raw input not available, so turn off "Enhance pointer precision" in Windows)',
   tiers: ['Beginner', 'Intermediate', 'Advanced', 'Saint', 'King', 'Emperor', 'God'], tier: t => 'Rank: ' + t,
   tierNote: 'Your rank comes from your best Rank Test, measured against real players. God is pro esports level (about the top 0.5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
@@ -121,7 +121,7 @@ hu: {
   setNo: (p, d) => `Legutóbb ${p} lett, ${d} az eltérés, így még nem állt be. Futtasd újra egy másik napon; 10%-on belül azt jelenti, beállt.`,
   keep: 'Utána maradj ennél: legalább egy hétig játssz ezzel a számmal, mielőtt változtatsz rajta.', train: 'Kezdődik az edzés',
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} a célon`, combo: c => `KOMBÓ x${c}`, lives: 'Életek',
-  paused: 'Szünet', restart: 'Újrakezdés', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
+  paused: 'Szünet', restart: 'Újrakezdés', lockFail: 'A böngésző még nem rögzítette az egeret. Nyomd meg még egyszer az Újrakezdést.', compat: c => 'Kompatibilis mód: ' + (c ? 'BE' : 'KI'), compatNote: 'Nem fordul a nézet, vagy furcsa az egér? Kapcsold be a kompatibilis módot: egyszerű egérbemenet és egyszerű rajzolás.', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
   rawNote: '   (a nyers egérjel nem elérhető, ezért kapcsold ki a Windows egérbeállításaiban a mutatópontosság növelését)',
   tiers: ['Kezdő', 'Középhaladó', 'Haladó', 'Szent', 'Király', 'Császár', 'Isten'], tier: t => 'Rang: ' + t,
   tierNote: 'A rangod a legjobb Rangtesztedből jön, valódi játékosokhoz mérve. Az Isten profi e-sport szint (nagyjából a legjobb 0,5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
@@ -139,14 +139,17 @@ const L = TX[LANG];
 
 let rnd = Math.random;
 function seed(a) { rnd = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-const ui = document.getElementById('ui'), cv = document.getElementById('c'), hud = document.getElementById('hud'), g = cv.getContext('2d', {desynchronized: true, alpha: false});
+const ui = document.getElementById('ui'), cv = document.getElementById('c'), hud = document.getElementById('hud'), c3 = document.getElementById('c3'), GL = c3.getContext('webgl2', {desynchronized: true, alpha: false, antialias: false, powerPreference: 'high-performance'}),
+  g = GL ? cv.getContext('2d') : cv.getContext('2d', {desynchronized: true, alpha: false});
 const DB = JSON.parse(localStorage.egopub_players || '{}');
 let NAME = localStorage.ego_name || '', RAW = false, MUTE = localStorage.ego_mute === '1';
 function me() { const P = DB[NAME] = DB[NAME] || {sens: START_SENS, stars: {}, cleared: 0, fails: {}, sel: [], day: '', today: 0}; P.tries = P.tries || {}; P.first = P.first || {}; return P; }
 const RK_Z = [-0.253, 0.253, 0.674, 1.282, 1.881, 2.61];
-const RK_FL = /*FL*/[2.148, 1.979, 1.837, 1.68, 1.553, 1.412, 1.275, 1.157, 1.035, 0.916, 0.809]/*FL*/, RK_ON = /*ON*/[0.018, 0.028, 0.029, 0.03, 0.103, 0.219, 0.339, 0.521, 0.672, 0.707, 0.735]/*ON*/;
-function zOf(tab, x) { const n = tab.length - 1; let i = 0; while (i < n - 1 && (tab[i + 1] - x) * (tab[n] - tab[0]) <= 0) i++;
-  const s = Math.max(-1, Math.min(2, (i + (x - tab[i]) / (tab[i + 1] - tab[i])) / n)); return -0.674 + s * 3.552; }
+const RK_PZ = [3.09, 2.326, 1.645, 1.282, 0.674, 0, -0.674, -1.282, -2.326];
+const RK_FL = [0.646, 0.724, 0.756, 0.797, 0.874, 0.961, 1.073, 1.217, 1.553], RK_ON = [0.85, 0.76, 0.64, 0.59, 0.52, 0.47, 0.35, 0.26, 0.14];
+function zOf(tab, x) { const n = tab.length - 1, up = tab[0] > tab[n]; let i = 0;
+  while (i < n - 1 && (up ? x < tab[i + 1] : x > tab[i + 1])) i++;
+  return Math.max(-3.5, Math.min(3.7, RK_PZ[i] + (x - tab[i]) / (tab[i + 1] - tab[i]) * (RK_PZ[i + 1] - RK_PZ[i]))); }
 const Phi = z => { const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2), q = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - q : q; };
 function rkScore(r) { const z = 0.2 * Math.log(270 / Math.max(80, Math.min(2000, r.rt))) / 0.30 + 0.4 * zOf(RK_FL, Math.max(0.15, Math.min(10, r.fl))) + 0.4 * zOf(RK_ON, Math.max(0, Math.min(1, r.on)));
   let t = 0; RK_Z.forEach((x, j) => { if (z >= x) t = j + 1; }); return {z, t, top: 1 - Phi(z)}; }
@@ -195,11 +198,16 @@ function save() { localStorage.egopub_players = JSON.stringify(DB); push(); }
 const ease = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 1));
 const rankOf = c => c ? RANKS[c - 1] : 300;
 
-function show(html) { ui.style.display = 'flex'; cv.style.display = 'none'; hud.style.display = 'none'; ui.innerHTML = '<div class="card">' + html + '</div>'; }
+function show(html) { ui.style.display = 'flex'; cv.style.display = c3.style.display = 'none'; hud.style.display = 'none'; ui.innerHTML = '<div class="card">' + html + '</div>'; }
+let COMPAT = localStorage.ego_compat === '1';
 async function lock() {
-  try { await cv.requestPointerLock({unadjustedMovement: true}); RAW = true; }
-  catch (e) { RAW = false; try { await cv.requestPointerLock(); } catch (e2) {} }
-}
+  const tryLock = o => new Promise(res => { let done = false; const fin = v => { if (done) return; done = true; document.removeEventListener('pointerlockchange', ok); document.removeEventListener('pointerlockerror', bad); res(v); },
+    ok = () => fin(!!document.pointerLockElement), bad = () => fin(false);
+    document.addEventListener('pointerlockchange', ok); document.addEventListener('pointerlockerror', bad); setTimeout(() => fin(!!document.pointerLockElement), 1000);
+    try { const pr = cv.requestPointerLock(o); if (pr && pr.catch) pr.catch(bad); } catch (e) { bad(); } });
+  RAW = !COMPAT && await tryLock({unadjustedMovement: true}); if (!RAW && !document.pointerLockElement) await tryLock(); return !!document.pointerLockElement; }
+function compatBtn() { return `<button class="alt" onclick="COMPAT = !COMPAT; localStorage.ego_compat = COMPAT ? '1' : '0'; this.outerHTML = compatBtn()">${L.compat(COMPAT)}</button>`; }
+function pauseScreen(msg) { show(`<h2>${L.paused}</h2>${msg ? `<p>${msg}</p>` : ''}<button id="go" onclick="play(run.drills, run.label, run.sens, run.sd, run.done)">${L.restart}</button>${compatBtn()}<p class="dim">${L.compatNote}</p>`); }
 function unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
 let AC;
 function snd(f, d, type = 'triangle', v = 0.08) {
@@ -327,7 +335,45 @@ function cm360() { const d = +document.getElementById('dpi').value; document.get
 let FIRE = false, VEL = [0, 0]; const KEYS = {};
 let mode = '', cam = {y: 0, p: 0}, dpc = 0, T = [], FX = [], run = null, raf = 0, last = 0, cd0 = 0, cdk = 0, PL = [0, 0];
 const R = d => d * Math.PI / 180;
-function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+function resize() { cv.width = innerWidth; cv.height = innerHeight; if (GL) { c3.width = innerWidth; c3.height = innerHeight; } }
+const GLP = GL && (() => {
+  const sh = (t, src) => { const o = GL.createShader(t); GL.shaderSource(o, src); GL.compileShader(o); if (!GL.getShaderParameter(o, GL.COMPILE_STATUS)) throw new Error(GL.getShaderInfoLog(o)); return o; };
+  const pr = GL.createProgram();
+  GL.attachShader(pr, sh(GL.VERTEX_SHADER, '#version 300 es\nin vec2 a; void main() { gl_Position = vec4(a, 0., 1.); }'));
+  GL.attachShader(pr, sh(GL.FRAGMENT_SHADER, `#version 300 es
+precision highp float; out vec4 o;
+uniform vec2 uRes; uniform vec4 uRot; uniform float uF; uniform int uN; uniform vec4 uT[16];
+const vec3 H = vec3(30., 12., 30.); const float FL = -2.;
+vec3 grid(vec3 p, vec3 n, float t) { vec2 q = abs(n.y) > .5 ? p.xz : abs(n.x) > .5 ? p.zy : p.xy;
+  vec2 w = fwidth(q), f = abs(fract(q / 2. + .5) - .5) * 2.; float l = 1. - min(min(f.x / (w.x + 1e-4), f.y / (w.y + 1e-4)) * .5, 1.);
+  vec3 base = n.y > .5 ? vec3(.055, .07, .1) : n.y < -.5 ? vec3(.02, .025, .04) : vec3(.04, .055, .085);
+  float lit = .55 + .45 * exp(-length(p.xz) / 28.);
+  return mix(base * lit, vec3(.1, .2, .36), l * .7 * exp(-t / 45.)); }
+void main() {
+  vec2 s = (gl_FragCoord.xy - uRes * .5) / uF;
+  vec3 c = normalize(vec3(s, 1.)); float cy = uRot.x, sy = uRot.y, cp = uRot.z, sp = uRot.w;
+  float yy = c.y * cp + c.z * sp, z1 = -c.y * sp + c.z * cp; vec3 d = vec3(c.x * cy + z1 * sy, yy, -c.x * sy + z1 * cy);
+  vec3 tb = sign(d) * H / d; tb.y = d.y < 0. ? FL / d.y : (FL + 2. * H.y) / d.y;
+  float t = min(min(tb.x, tb.y), tb.z); vec3 n = t == tb.x ? vec3(-sign(d.x), 0., 0.) : t == tb.y ? vec3(0., -sign(d.y), 0.) : vec3(0., 0., -sign(d.z));
+  vec3 col = grid(d * t, n, t); float best = 1e9;
+  for (int i = 0; i < 16; i++) { if (i >= uN) break; vec4 q = uT[i];
+    float k = floor(q.w / 10.); vec3 ce = 10. * q.xyz; float r = 10. * (q.w - k * 10.), b = dot(d, ce); vec3 pp = ce - b * d;
+    float h = r * r - dot(pp, pp); if (h < 0. || b <= 0.) continue; float th = b - sqrt(h); if (th <= 0. || th > best) continue; best = th;
+    vec3 p = d * th, nn = normalize(p - ce), L = normalize(vec3(.35, .9, -.25)), v = -d;
+    vec3 al = k < .5 ? vec3(1., .3, .37) : k < 1.5 ? vec3(.21, .82, .48) : vec3(.36, .4, .48);
+    float dif = max(dot(nn, L), 0.), sp2 = pow(max(dot(reflect(-L, nn), v), 0.), 40.), rim = pow(1. - max(dot(nn, v), 0.), 3.);
+    col = al * (.6 + .5 * dif) + vec3(sp2 * .6) + al * rim * .5; }
+  o = vec4(pow(col, vec3(.92)), 1.); }`));
+  GL.linkProgram(pr); if (!GL.getProgramParameter(pr, GL.LINK_STATUS)) throw new Error(GL.getProgramInfoLog(pr));
+  GL.useProgram(pr); GL.bindBuffer(GL.ARRAY_BUFFER, GL.createBuffer()); GL.bufferData(GL.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), GL.STATIC_DRAW);
+  const a = GL.getAttribLocation(pr, 'a'); GL.enableVertexAttribArray(a); GL.vertexAttribPointer(a, 2, GL.FLOAT, false, 0, 0);
+  return {res: GL.getUniformLocation(pr, 'uRes'), rot: GL.getUniformLocation(pr, 'uRot'), f: GL.getUniformLocation(pr, 'uF'), n: GL.getUniformLocation(pr, 'uN'), t: GL.getUniformLocation(pr, 'uT'), buf: new Float32Array(64)};
+})();
+let glLast = 0;
+function glDraw() { glLast = performance.now(); const U = GLP, b = U.buf; let n = 0;
+  for (const t of T) { if (t.hide || n >= 16) continue; const u = dir(t.y, t.p); b.set([u[0], u[1], u[2], 10 * (t.wait ? 2 : angTo(t.y, t.p) < t.r ? 1 : 0) + Math.sin(t.r)], n * 4); n++; }
+  GL.viewport(0, 0, c3.width, c3.height); GL.uniform2f(U.res, c3.width, c3.height); GL.uniform4f(U.rot, Math.cos(cam.y), Math.sin(cam.y), Math.cos(cam.p), Math.sin(cam.p)); GL.uniform1f(U.f, (c3.width / 2) / Math.tan(HFOV / 2));
+  GL.uniform1i(U.n, n); GL.uniform4fv(U.t, b); GL.drawArrays(GL.TRIANGLES, 0, 3); }
 addEventListener('resize', resize);
 function dir(y, p) { return [Math.cos(p) * Math.sin(y), Math.sin(p), Math.cos(p) * Math.cos(y)]; }
 function proj(y, p) {
@@ -338,15 +384,17 @@ function proj(y, p) {
 }
 function angTo(y, p) { const a = dir(cam.y, cam.p), b = dir(y, p); return Math.acos(Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])); }
 function draw(now) {
+  c3.style.display = GLP && !COMPAT && cv.style.display === 'block' ? 'block' : 'none';
+  if (GLP && !COMPAT) { glDraw(); g.clearRect(0, 0, cv.width, cv.height); } else {
   g.fillStyle = '#060a14'; g.fillRect(0, 0, cv.width, cv.height);
   g.strokeStyle = '#14203a'; g.lineWidth = 1;
   for (let k = -24; k < 24; k++) { const y = Math.round(cam.y / R(15)) * R(15) + k * R(15); g.beginPath(); let on = false;
     for (let p = -60; p <= 60; p += 5) { const s = proj(y, R(p)); if (s) { on ? g.lineTo(s[0], s[1]) : g.moveTo(s[0], s[1]); on = true; } else on = false; } g.stroke(); }
   for (let p = -60; p <= 60; p += 10) { g.strokeStyle = p === 0 ? '#24406e' : '#14203a'; g.beginPath(); let on = false;
-    for (let d = -100; d <= 100; d += 4) { const s = proj(cam.y + R(d), R(p)); if (s) { on ? g.lineTo(s[0], s[1]) : g.moveTo(s[0], s[1]); on = true; } else on = false; } g.stroke(); }
+    for (let d = -100; d <= 100; d += 4) { const s = proj(cam.y + R(d), R(p)); if (s) { on ? g.lineTo(s[0], s[1]) : g.moveTo(s[0], s[1]); on = true; } else on = false; } g.stroke(); } }
   const xd = run && mode === 'aim' && run.drills[run.di], xk = xd && XK[xd.k]; if (xk && xk.draw) xk.draw(now, xd);
   for (const t of T) { if (t.hide) continue; const s = proj(t.y, t.p); if (!s) continue; const r = Math.max(3, s[2] * Math.tan(t.r)), on = angTo(t.y, t.p) < t.r;
-    g.fillStyle = t.wait ? '#5a6478' : on ? '#36d07a' : '#ff4d5e'; g.beginPath(); g.arc(s[0], s[1], r, 0, 7); g.fill(); g.strokeStyle = '#ffffff44'; g.stroke();
+    if (!GLP || COMPAT) { g.fillStyle = t.wait ? '#5a6478' : on ? '#36d07a' : '#ff4d5e'; g.beginPath(); g.arc(s[0], s[1], r, 0, 7); g.fill(); g.strokeStyle = '#ffffff44'; g.stroke(); }
     if (t.life) { g.strokeStyle = '#00d8ff'; g.lineWidth = 3; g.beginPath(); g.arc(s[0], s[1], r + 6, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.max(0, 1 - (now - t.t0) / t.life)); g.stroke(); g.lineWidth = 1; }
     if (t.max) { g.strokeStyle = '#ffc83d'; g.lineWidth = 4; g.beginPath(); g.arc(s[0], s[1], r + 7, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * t.hp / t.max); g.stroke(); g.lineWidth = 1; } }
   FX = FX.filter(f => now - f.t0 < 260);
@@ -361,8 +409,9 @@ function bigText(t) { g.fillStyle = '#00d8ff'; g.font = '900 140px Segoe UI'; g.
 async function play(drills, label, sens, sd, done) {
   dpc = R(sens * YAW); cam = {y: 0, p: 0}; seed(sd); T = []; FX = []; PL = [0, 0]; VEL = [0, 0];
   run = {drills, label, sens, sd, done, di: 0, res: [], combo: 0, rec: [], t0r: 0, rf: 0, mdx: 0, mdy: 0, lh: 0, ld: 0};
-  ui.style.display = 'none'; cv.style.display = 'block'; hud.style.display = 'block'; hud.textContent = label; resize();
-  await lock(); mode = 'count'; cd0 = last = performance.now(); cdk = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
+  ui.style.display = 'none'; cv.style.display = c3.style.display = 'block'; hud.style.display = 'block'; hud.textContent = label; resize();
+  if (!await lock()) return pauseScreen(L.lockFail);
+  mode = 'count'; cd0 = last = performance.now(); cdk = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
 }
 const D = () => run.drills[run.di];
 function startDrill(now) {
@@ -383,7 +432,7 @@ function placeMover(t) { const dx = t.x - PL[0], dz = t.z - PL[1], dd = Math.hyp
 function spawnMover(now) { const side = rnd() < .5 ? -1 : 1, a = cam.y + side * R(15 + rnd() * 45), dd = 8 + rnd() * 6;
   const t = {x: PL[0] + dd * Math.sin(a), z: PL[1] + dd * Math.cos(a), ux: Math.cos(a), uz: -Math.sin(a), v: (rnd() < .5 ? -1 : 1) * (5 + rnd() * 3) * D().v, h: -0.2 + rnd() * 0.6, t0: now};
   placeMover(t); T = [t]; }
-function aimMove(e) { run.mdx += e.movementX; run.mdy += e.movementY; cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); }
+function aimMove(e) { run.mdx += e.movementX; run.mdy += e.movementY; cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); if (GLP && !COMPAT && mode === 'aim' && performance.now() - glLast > 2) glDraw(); }
 function finishDrill(now) {
   const d = D(), s = run.ds, el = (now - s.t0) / 1000;
   run.res.push({k: d.k, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0, rts: s.rts || null, x: s.x || null});
@@ -433,7 +482,7 @@ function tick(now) {
     if (el >= d.s) return finishDrill(now);
   }
   if (run.combo >= 3) h += '   ' + L.combo(run.combo);
-  recFrame(now); hud.textContent = h + (RAW ? '' : L.rawNote);
+  recFrame(now); hud.textContent = h + (RAW || COMPAT ? '' : L.rawNote);
   draw(now); raf = requestAnimationFrame(tick);
 }
 function aimDown() {
@@ -449,14 +498,14 @@ function aimDown() {
   if (d.k === 'flick') { T.splice(T.indexOf(t), 1); fill(now); } else spawnMover(now);
 }
 
-let RAWEV = false; document.addEventListener('pointerrawupdate', e => { RAWEV = true; if (document.pointerLockElement && mode === 'aim') aimMove(e); }); document.addEventListener('mousemove', e => { if (!RAWEV && document.pointerLockElement && mode === 'aim') aimMove(e); });
+let RAWEV = false; document.addEventListener('pointerrawupdate', e => { if (COMPAT) return; RAWEV = true; if (document.pointerLockElement && mode === 'aim') aimMove(e); }); document.addEventListener('mousemove', e => { if ((!RAWEV || COMPAT) && document.pointerLockElement && mode === 'aim') aimMove(e); });
 document.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement && mode === 'aim') { FIRE = true; run.rf |= 1; aimDown(); } });
 document.addEventListener('keydown', e => {
   if ((e.code === 'Space' || e.code === 'Enter') && !document.pointerLockElement && e.target.tagName !== 'INPUT') { const b = document.getElementById('go'); if (b) { e.preventDefault(); b.click(); } }
 });
 document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && (mode === 'aim' || mode === 'count')) { mode = ''; cancelAnimationFrame(raf);
-    show(`<h2>${L.paused}</h2><button id="go" onclick="play(run.drills, run.label, run.sens, run.sd, run.done)">${L.restart}</button>`); }
+    pauseScreen(); }
 });
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), wrap = a => Math.atan2(Math.sin(a), Math.cos(a)), DEG = 180 / Math.PI;
 const VMAX = 5, ACCF = 0.34, FRIC = 5.2, STOPV = 1.6, ACCEL = 5.5, WALLZ = 2.5;
