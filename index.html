@@ -158,12 +158,13 @@ function rkScore(r) { const z = 0.2 * zOf(RK_RT, Math.max(80, Math.min(2000, r.r
   let t = 0; RK_Z.forEach((x, j) => { if (z >= x) t = j + 1; }); return {z, t, top: 1 - Phi(z)}; }
 const topTxt = p => { p = Math.max(1e-4, p); const x = String(p < 0.01 ? (p * 100).toFixed(2) : p < 0.1 ? (p * 100).toFixed(1) : Math.round(p * 100)); return (LANG === 'hu' ? x.replace('.', ',') : x) + '%'; };
 const KEPT = {mrln: 4, adith: 4, petra: 1};
-function tierOf(P) { const k = KEPT[(NAME || '').toLowerCase()]; return Math.max(P.rk ? rkScore(P.rk).t : -1, k != null ? k : -1); }
+const bestRk = P => [P.rk, ...(P.hist || [])].filter(x => x && x.rt > 0 && x.fl > 0 && x.on >= 0).reduce((b, x) => !b || rkScore(x).z > rkScore(b).z ? x : b, null);
+function tierOf(P) { const k = KEPT[(NAME || '').toLowerCase()], b = bestRk(P); return Math.max(b ? rkScore(b).t : -1, k != null ? k : -1); }
 function rankTest() { play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6}, {k: 'track', s: 12, r: 1.8, v: 1.3}], L.rt, me().sens, Date.now(), judgeRank); }
 function judgeRank(res, why) {
   if (why) return show(`<div class="tag">${L.rt}</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
   const a = res[0].rts.slice().sort((x, y) => x - y), r = {pf: perfNow(), rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3)};
-  const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT}]).slice(-40); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
+  const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT}]).slice(-40); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; P.rk = bestRk(P) || P.rk; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
   const b = rkScore(P.rk);
   show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
   ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
