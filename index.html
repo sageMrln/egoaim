@@ -281,7 +281,7 @@ function rankPop(P) { const t = tierOf(P), was = P.seenT != null ? P.seenT : CAL
 function map() {
   const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
   const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
-    return `<div class="tile r-${RCOL[BASE_ROUTE[i]]}${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
+    return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
   rankPop(P); show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank" id="sanct">${POS ? L.rank(POS) : ''}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
   <div class="grid">${tiles}</div>${P.cleared >= STAGES.length ? `<h2 style="margin-top:18px;font-size:20px">${G().top}</h2><div class="grid">${genTiles(P)}</div>` : ""}
   ${P.cleared >= STAGES.length ? `<button id="go" onclick="genIntro()">${G().btn(gxOf(P).n + 1)}</button>` : `<button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>`}<button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
@@ -909,12 +909,12 @@ TX.en.af = {t: i => `Calibration round ${i}`, b: 'Hit 10 targets. Each round mea
 TX.hu.af = {t: i => `${i}. kalibráló kör`, b: 'Találj el 10 célt. Minden kör megméri, meddig visz el a kezed első lendülete, és kicsit állít az érzékenységen, amíg már nem változik: általában 5-8 kör, 3-4 perc. Ne gondolkodj rajta, csak találd el a célokat.'};
 
 // ---------- Endless Ascent: after stage 13, each new stage is generated from the player's own numbers ----------
-// Seven routes, one colour each. The weakest route is picked from the Rank Trials parts and the motion of recent plays,
+// Seven routes; each profile draws one of seven card colours at random, kept for good. The weakest route is picked from the Rank Trials parts and the motion of recent plays,
 // difficulty per route follows a staircase (+0.25 on a clear, -0.6 on a fail: settles near 70% clears), and the target
 // is always the next rank, one rank at a time.
 const ROUTES = ['speed', 'precision', 'timing', 'tracking', 'reaction', 'switching', 'mixed'];
-const RCOL = {speed: 'red', precision: 'white', timing: 'purple', tracking: 'blue', reaction: 'yellow', switching: 'green', mixed: 'black'};
-const BASE_ROUTE = ['speed', 'tracking', 'reaction', 'speed', 'tracking', 'reaction', 'precision', 'mixed', 'timing', 'switching', 'reaction', 'tracking', 'mixed'];
+const COLS = ['black', 'red', 'blue', 'yellow', 'green', 'white', 'purple'];   // one per profile, drawn once at random
+const pcol = P => { const g = gxOf(P); if (!COLS.includes(g.col)) g.col = COLS[(Math.random() * COLS.length) | 0]; return g.col; };
 const GX = {
   en: {btn: n => `Endless Ascent: stage ${n}`, head: 'A new stage unlocked based on your new statistics', ask: 'Do you wish to improve?', yes: 'Yes, play it', later: 'Not now',
     route: {speed: 'Speed', precision: 'Precision', timing: 'Timing', tracking: 'Tracking', reaction: 'Reaction', switching: 'Switching', mixed: 'All-round'},
@@ -993,14 +993,14 @@ function genStage(P, force) {
 }
 const gDesc = x => x.k === 'flick' ? L.dFlick(x) : x.k === 'track' ? L.dTrack(x) : x.k === 'move' ? L.dMove(x) : x.k === 'peek' ? G().dPeek(x) : G().dSwitch(x);
 const nextTier = P => L.tiers[Math.min(6, Math.max(0, tierOf(P) + 1))];
-const routeBadge = r => `<span class="rbadge r-${RCOL[r]}">${G().route[r]}</span>`;
+const routeBadge = r => `<span class="rbadge">${G().route[r]}</span>`;
 
 function genIntro() {
   const P = me(), g = gxOf(P);
   if (!bestRk(P)) return show(`<div class="tag">${G().top}</div><p>${G().need}</p><button id="go" onclick="CT='';rankTest()">${G().rt}</button><button class="alt" onclick="map()">${G().map}</button>`);
   const c = g.cur || genStage(P); save();
   const last = g.h[g.h.length - 1];
-  show(`<div class="gxcard r-${RCOL[c.r]}"><div class="tag">${G().top} &middot; ${L.stage(g.n + 1)}</div><h2>${G().head}</h2>
+  show(`<div class="gxcard r-${pcol(P)}"><div class="tag">${G().top} &middot; ${L.stage(g.n + 1)}</div><h2>${G().head}</h2>
   <div>${routeBadge(c.r)} <span class="dim">${G().rwhy[c.r]}</span></div>
   ${last ? `<p class="dim">${G().last}: ${G().stats(last)}</p>` : ''}
   <p>${c.d.map(x => gDesc(x) + (Object.keys(x.need || {}).length ? ' ' + L.pass(x.need) : '')).join(' ')}</p>
@@ -1022,15 +1022,15 @@ function genDone(res, why) {
   save(); tune(ok ? [523, 659, 784, 1047] : [392, 330, 262], ok ? 110 : 130, ok ? 0.3 : 0.22);
   const chk = ok && g.since >= 5 && tierOf(P) < 6;
   if (chk) g.since = 0;
-  show(`<div class="gxcard r-${RCOL[c.r]}"><div class="tag">${G().top} &middot; ${routeBadge(c.r)}</div><div class="${ok ? 'clear' : 'fail'}">${ok ? G().cleared : G().notYet}</div>
+  show(`<div class="gxcard r-${pcol(P)}"><div class="tag">${G().top} &middot; ${routeBadge(c.r)}</div><div class="${ok ? 'clear' : 'fail'}">${ok ? G().cleared : G().notYet}</div>
   ${why ? `<p>${why}</p>` : ''}<p class="dim">${G().stats(st)}</p><p class="dim">${G().done(g.n)} &middot; ${G().next(nextTier(P))}</p></div>
   ${chk ? `<div class="hype">${G().check(nextTier(P))}</div><button id="go" onclick="CT='';rankTest()">${G().rt}</button><button class="alt" onclick="genIntro()">${G().nextBtn}</button>`
         : `<button id="go" onclick="genIntro()">${ok ? G().nextBtn : G().again}</button>`}<button class="alt" onclick="map()">${G().map}</button>`);
 }
 function genTiles(P) {
   const g = gxOf(P);
-  return g.h.slice(-9).map((x, i, a) => `<div class="tile r-${RCOL[x.f]}">${G().route[x.f]}<b>${x.ok ? '&#10003;' : '&#10007;'} ${G().stats({tph: x.tph, acc: x.acc}).split(' &middot; ')[0] || G().stats({on: x.on})}</b></div>`).join('') +
-    `<div class="tile next r-${RCOL[(g.cur || {}).r || 'mixed']}" onclick="genIntro()">${G().btn(g.n + 1)}<b>${G().ask}</b></div>`;
+  return g.h.slice(-9).map((x, i, a) => `<div class="tile r-${pcol(P)}">${G().route[x.f]}<b>${x.ok ? '&#10003;' : '&#10007;'} ${G().stats({tph: x.tph, acc: x.acc}).split(' &middot; ')[0] || G().stats({on: x.on})}</b></div>`).join('') +
+    `<div class="tile next r-${pcol(P)}" onclick="genIntro()">${G().btn(g.n + 1)}<b>${G().ask}</b></div>`;
 }
 
 if (location.hash === '#sources') sources(); else intro();
