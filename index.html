@@ -22,9 +22,10 @@ select,input{background:#070b14;color:var(--txt);border:1px solid var(--line);bo
 .bar{height:8px;background:#141d30;border-radius:4px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
 @keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
 #c,#c3{position:absolute;inset:0;display:none}
+#perf{position:absolute;right:14px;bottom:10px;font:600 13px Consolas,monospace;color:#8fa3c4;display:none;pointer-events:none;text-shadow:0 1px 3px #000}
 #hud{position:absolute;top:12px;left:0;right:0;text-align:center;font-size:20px;color:#dfe7f5;display:none;pointer-events:none;text-shadow:0 1px 4px #000;font-weight:600;letter-spacing:.5px}
 </style></head><body>
-<canvas id="c3"></canvas><canvas id="c"></canvas><div id="hud"></div><div id="ui"></div>
+<canvas id="c3"></canvas><canvas id="c"></canvas><div id="hud"></div><div id="perf"></div><div id="ui"></div>
 <script>
 if (top !== self) top.location = self.location;
 'use strict';
@@ -81,7 +82,7 @@ en: {
   setNo: (p, d) => `Last time you got ${p}, ${d} apart, so it has not settled yet. Run it again another day; within 10% means settled.`,
   keep: 'Then keep it: play with this number for at least a week before you change it.', train: 'Training begins',
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} on target`, combo: c => `COMBO x${c}`, lives: 'Lives',
-  paused: 'Paused', restart: 'Restart', sensAdj: g => 'Your ' + g + ' sensitivity', sensTip: 'Too fast or too slow? Nudge it here, then set the same number in your game.', lockFail: 'The browser did not lock the mouse yet. Press Restart once more.', compat: c => 'Compatibility mode: ' + (c ? 'ON' : 'OFF'), compatNote: 'View will not turn, or the mouse feels wrong? Turn compatibility mode on: plain mouse input and plain drawing.', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
+  paused: 'Paused', restart: 'Restart', pf: {hz: 'Mouse', na: 'needs raw input', lag: 'Input to frame', setup: 'Your setup, measured during this test', note: 'Only the monitor’s own delay is not included.'}, sensAdj: g => 'Your ' + g + ' sensitivity', sensTip: 'Too fast or too slow? Nudge it here, then set the same number in your game.', lockFail: 'The browser did not lock the mouse yet. Press Restart once more.', compat: c => 'Compatibility mode: ' + (c ? 'ON' : 'OFF'), compatNote: 'View will not turn, or the mouse feels wrong? Turn compatibility mode on: plain mouse input and plain drawing.', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
   rawNote: '   (raw input not available, so turn off "Enhance pointer precision" in Windows)',
   tiers: ['Beginner', 'Intermediate', 'Advanced', 'Saint', 'King', 'Emperor', 'God'], tier: t => 'Rank: ' + t,
   tierNote: 'Your rank comes from your best Rank Test, measured against real players. God is pro esports level (about the top 0.5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
@@ -121,7 +122,7 @@ hu: {
   setNo: (p, d) => `Legutóbb ${p} lett, ${d} az eltérés, így még nem állt be. Futtasd újra egy másik napon; 10%-on belül azt jelenti, beállt.`,
   keep: 'Utána maradj ennél: legalább egy hétig játssz ezzel a számmal, mielőtt változtatsz rajta.', train: 'Kezdődik az edzés',
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} a célon`, combo: c => `KOMBÓ x${c}`, lives: 'Életek',
-  paused: 'Szünet', restart: 'Újrakezdés', sensAdj: g => g + ' érzékenységed', sensTip: 'Túl gyors vagy túl lassú? Állíts rajta itt, aztán írd be ugyanezt a játékban is.', lockFail: 'A böngésző még nem rögzítette az egeret. Nyomd meg még egyszer az Újrakezdést.', compat: c => 'Kompatibilis mód: ' + (c ? 'BE' : 'KI'), compatNote: 'Nem fordul a nézet, vagy furcsa az egér? Kapcsold be a kompatibilis módot: egyszerű egérbemenet és egyszerű rajzolás.', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
+  paused: 'Szünet', restart: 'Újrakezdés', pf: {hz: 'Egér', na: 'nyers bemenet kell hozzá', lag: 'Bemenettől képkockáig', setup: 'A géped, a teszt közben mérve', note: 'Csak a monitor saját késése nincs benne.'}, sensAdj: g => g + ' érzékenységed', sensTip: 'Túl gyors vagy túl lassú? Állíts rajta itt, aztán írd be ugyanezt a játékban is.', lockFail: 'A böngésző még nem rögzítette az egeret. Nyomd meg még egyszer az Újrakezdést.', compat: c => 'Kompatibilis mód: ' + (c ? 'BE' : 'KI'), compatNote: 'Nem fordul a nézet, vagy furcsa az egér? Kapcsold be a kompatibilis módot: egyszerű egérbemenet és egyszerű rajzolás.', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
   rawNote: '   (a nyers egérjel nem elérhető, ezért kapcsold ki a Windows egérbeállításaiban a mutatópontosság növelését)',
   tiers: ['Kezdő', 'Középhaladó', 'Haladó', 'Szent', 'Király', 'Császár', 'Isten'], tier: t => 'Rang: ' + t,
   tierNote: 'A rangod a legjobb Rangtesztedből jön, valódi játékosokhoz mérve. Az Isten profi e-sport szint (nagyjából a legjobb 0,5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
@@ -158,10 +159,10 @@ function tierOf(P) { return P.rk ? rkScore(P.rk).t : -1; }
 function rankTest() { play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6}, {k: 'track', s: 12, r: 1.8, v: 1.3}], L.rt, me().sens, Date.now(), judgeRank); }
 function judgeRank(res, why) {
   if (why) return show(`<div class="tag">${L.rt}</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
-  const a = res[0].rts.slice().sort((x, y) => x - y), r = {rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3)};
+  const a = res[0].rts.slice().sort((x, y) => x - y), r = {pf: perfNow(), rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3)};
   const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT}]).slice(-40); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
   const b = rkScore(P.rk);
-  show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p>
+  show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
   ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
   ${CT ? `<button id="go" onclick="CT='';course()">${L.co.back}</button><button class="alt" onclick="rankTest()">${L.retry}</button>` : `<button id="go" onclick="rankTest()">${L.retry}</button>`}<button class="alt" onclick="CT='';map()">${L.map}</button>`);
 }
@@ -374,7 +375,7 @@ void main() {
   return {res: GL.getUniformLocation(pr, 'uRes'), rot: GL.getUniformLocation(pr, 'uRot'), f: GL.getUniformLocation(pr, 'uF'), n: GL.getUniformLocation(pr, 'uN'), t: GL.getUniformLocation(pr, 'uT'), buf: new Float32Array(64)};
 })();
 let glLast = 0;
-function glDraw() { glLast = performance.now(); const U = GLP, b = U.buf; let n = 0;
+function glDraw() { perfFrame(); glLast = performance.now(); const U = GLP, b = U.buf; let n = 0;
   for (const t of T) { if (t.hide || n >= 16) continue; const u = dir(t.y, t.p); b.set([u[0], u[1], u[2], 10 * (t.wait ? 2 : angTo(t.y, t.p) < t.r ? 1 : 0) + Math.sin(t.r)], n * 4); n++; }
   GL.viewport(0, 0, c3.width, c3.height); GL.uniform2f(U.res, c3.width, c3.height); GL.uniform4f(U.rot, Math.cos(cam.y), Math.sin(cam.y), Math.cos(cam.p), Math.sin(cam.p)); GL.uniform1f(U.f, (c3.width / 2) / Math.tan(HFOV / 2));
   GL.uniform1i(U.n, n); GL.uniform4fv(U.t, b); GL.drawArrays(GL.TRIANGLES, 0, 3); }
@@ -387,7 +388,7 @@ function proj(y, p) {
   return [cv.width / 2 + x1 / z2 * f, cv.height / 2 - y2 / z2 * f, f / z2];
 }
 function angTo(y, p) { const a = dir(cam.y, cam.p), b = dir(y, p); return Math.acos(Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])); }
-function draw(now) {
+function draw(now) { perfFrame();
   c3.style.display = GLP && !COMPAT && cv.style.display === 'block' ? 'block' : 'none';
   if (GLP && !COMPAT) { glDraw(); g.clearRect(0, 0, cv.width, cv.height); } else {
   g.fillStyle = '#060a14'; g.fillRect(0, 0, cv.width, cv.height);
@@ -411,6 +412,7 @@ function draw(now) {
 function bigText(t) { g.fillStyle = '#00d8ff'; g.font = '900 140px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, cv.width / 2, cv.height / 2 - 120); }
 
 async function play(drills, label, sens, sd, done) {
+  PERF.fi = []; PERF.mi = []; PERF.lag = []; PERF.lastF = 0; PERF.pend = 0;
   dpc = R(sens * YAW); cam = {y: 0, p: 0}; seed(sd); T = []; FX = []; PL = [0, 0]; VEL = [0, 0];
   run = {drills, label, sens, sd, done, di: 0, res: [], combo: 0, rec: [], t0r: 0, rf: 0, mdx: 0, mdy: 0, lh: 0, ld: 0};
   ui.style.display = 'none'; cv.style.display = c3.style.display = 'block'; hud.style.display = 'block'; hud.textContent = label; resize();
@@ -436,7 +438,15 @@ function placeMover(t) { const dx = t.x - PL[0], dz = t.z - PL[1], dd = Math.hyp
 function spawnMover(now) { const side = rnd() < .5 ? -1 : 1, a = cam.y + side * R(15 + rnd() * 45), dd = 8 + rnd() * 6;
   const t = {x: PL[0] + dd * Math.sin(a), z: PL[1] + dd * Math.cos(a), ux: Math.cos(a), uz: -Math.sin(a), v: (rnd() < .5 ? -1 : 1) * (5 + rnd() * 3) * D().v, h: -0.2 + rnd() * 0.6, t0: now};
   placeMover(t); T = [t]; }
-function aimMove(e) { run.mdx += e.movementX; run.mdy += e.movementY; cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); if (GLP && !COMPAT && mode === 'aim' && performance.now() - glLast > 2) glDraw(); }
+const PERF = {fi: [], mi: [], lag: [], lastF: 0, lastM: 0, pend: 0, shown: 0};
+const pushC = (a, v) => { a.push(v); if (a.length > 240) a.shift(); }, medOf = a => a.length ? a.slice().sort((x, y) => x - y)[a.length >> 1] : 0;
+function perfInput(e) { const c = e.getCoalescedEvents ? e.getCoalescedEvents() : [], ts = (c.length ? c : [e]).map(x => x.timeStamp);
+  for (const t of ts) { const d = t - PERF.lastM; if (d > 0.05 && d < 50) pushC(PERF.mi, d); PERF.lastM = t; } if (!PERF.pend) PERF.pend = ts[0]; }
+function perfFrame() { if (PERF.pend) { pushC(PERF.lag, Math.max(0, performance.now() - PERF.pend)); PERF.pend = 0; } }
+function perfNow() { const f = medOf(PERF.fi), m = medOf(PERF.mi), l = medOf(PERF.lag);
+  return {fps: f ? Math.round(1000 / f) : 0, hz: RAWEV && !COMPAT && m ? Math.round(1000 / m) : 0, lag: PERF.lag.length ? +l.toFixed(1) : -1}; }
+function perfTxt(q) { q = q || perfNow(); return `${q.fps || '-'} FPS  ·  ${L.pf.hz} ${q.hz ? q.hz + ' Hz' : L.pf.na}  ·  ${L.pf.lag} ${q.lag < 0 ? '-' : q.lag + ' ms'}`; }
+function aimMove(e) { perfInput(e); run.mdx += e.movementX; run.mdy += e.movementY; cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); if (GLP && !COMPAT && mode === 'aim' && performance.now() - glLast > 2) glDraw(); }
 function finishDrill(now) {
   const d = D(), s = run.ds, el = (now - s.t0) / 1000;
   run.res.push({k: d.k, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0, rts: s.rts || null, x: s.x || null});
@@ -446,6 +456,8 @@ function finishDrill(now) {
 const foreperiod = () => 1000 + Math.min(3500, -Math.log(1 - rnd()) * 900); function reactHit(now, ms) { const s = run.ds; s.rts.push(ms); s.hits++; T = []; s.at = now + foreperiod(); if (s.hits >= D().n) finishDrill(now); }
 function endPlay(why) { sendMotion(why); mode = ''; T = []; FIRE = false; cancelAnimationFrame(raf); unlock(); run.done(run.res, why); }
 function tick(now) {
+  if (PERF.lastF && now - PERF.lastF < 200) pushC(PERF.fi, now - PERF.lastF); PERF.lastF = now;
+  const pe = document.getElementById('perf'); pe.style.display = cv.style.display; if (now - PERF.shown > 250) { PERF.shown = now; pe.textContent = perfTxt(); }
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (mode === 'count') {
     const k = 3 - Math.floor((now - cd0) / 450);
