@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate"><title>EGO AIM - aim trainer and sensitivity finder</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Find your mouse sensitivity with a blind A/B test, convert it between games, and climb 13 Blue Lock style aim stages.">
+<style>
+:root{--bg:#05070d;--card:#0c1220;--line:#1c2840;--txt:#e6ecf7;--dim:#8391ab;--acc:#2f7bff;--acc2:#00d8ff;--ok:#36d07a;--bad:#ff4d5e;--gold:#ffc83d}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:radial-gradient(ellipse at 50% 0%,#0d1a33 0%,var(--bg) 60%);color:var(--txt);font:17px/1.5 "Segoe UI",system-ui,sans-serif;overflow:hidden}
+#ui{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 38px;max-width:820px;width:94%;max-height:96vh;overflow:auto;box-shadow:0 0 60px #2f7bff22}
+h1{margin:0;font-size:46px;letter-spacing:4px;font-weight:900;font-style:italic}h1 span{color:var(--acc)}
+h2{margin:0 0 8px;font-size:26px;letter-spacing:1px}.tag{color:var(--acc2);font-size:14px;letter-spacing:3px;text-transform:uppercase;font-weight:700}
+p{margin:8px 0;color:#c4cede}.dim{color:var(--dim);font-size:14px}.hype{font-size:22px;font-style:italic;color:#fff;margin:6px 0 4px}
+button{background:linear-gradient(90deg,var(--acc),#5a3bff);color:#fff;border:0;border-radius:10px;padding:13px 26px;font-size:18px;font-weight:700;cursor:pointer;margin:14px 10px 0 0}
+button.alt{background:#1a2338;font-weight:400;font-size:16px}button:hover{filter:brightness(1.15)}
+select,input{background:#070b14;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:17px;width:130px}
+.big{font-size:64px;font-weight:900;color:var(--acc2);margin:0;line-height:1.1;text-shadow:0 0 30px #00d8ff66}
+.clear{font-size:58px;font-weight:900;font-style:italic;color:var(--acc2);letter-spacing:3px;text-shadow:0 0 40px #00d8ff88;animation:pop .45s ease-out}
+.fail{font-size:46px;font-weight:900;font-style:italic;color:var(--bad);letter-spacing:2px}
+.stars{font-size:46px;color:var(--gold);letter-spacing:6px}.stars i{color:#2a3550;font-style:normal}
+.rank{font-size:20px;color:var(--gold);font-weight:700;letter-spacing:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px;margin-top:12px}
+.tile{background:#0a1426;border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;font-size:14px}
+.tile b{display:block;font-size:15px;color:#fff}.tile .s{color:var(--gold);font-size:18px;letter-spacing:2px}.tile.lock{opacity:.35;cursor:default}.tile.next{border-color:var(--acc2);box-shadow:0 0 14px #00d8ff55}
+.bar{height:8px;background:#141d30;border-radius:4px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+#c{position:absolute;inset:0;display:none}
+#hud{position:absolute;top:12px;left:0;right:0;text-align:center;font-size:20px;color:#dfe7f5;display:none;pointer-events:none;text-shadow:0 1px 4px #000;font-weight:600;letter-spacing:.5px}
+</style></head><body>
+<canvas id="c"></canvas><div id="hud"></div><div id="ui"></div>
+<script>
+'use strict';
+// EGO AIM. Selection = a blind A/B search (the PSA method) for the sensitivity she aims best with. Training = 13 short
+// stages (20-40 s each) eased from untimed first touches to pressure stages, with stars, a rank climb and sound.
+// Built for a short attention span: one goal per stage, instant feedback, instant retry, failure text that says what to change.
+// Mouse counts map straight to degrees via each game's yaw (degrees turned per mouse count at sensitivity 1), so no DPI is needed.
+const LANG = (localStorage.ego_lang || navigator.language || 'en').slice(0, 2) === 'hu' ? 'hu' : 'en';
+const GAMES = [['Valorant', 0.07], ['Counter-Strike 2', 0.022], ['Apex Legends', 0.022], ['Overwatch 2', 0.0066], ['Marvel Rivals', 0.0175]];   // last one derived, not published
+let GAME = +(localStorage.ego_game || 0) % GAMES.length, YAW = GAMES[GAME][1];
+const defSens = () => +(0.0327 / YAW).toFixed(2);   // about 35 cm per full turn at 800 DPI, a middle-of-the-road start
+const START_SENS = defSens();
+const HFOV = 103 * Math.PI / 180;
+const SEL = [1.8, 1.5, 1.3, 1.15, 1.07, 1.03];
+const TRIAL = [{k: 'flick', n: 6, r: 2.2}, {k: 'move', n: 4, v: 1}, {k: 'track', s: 6, r: 2.4, v: 1}];
+// ponytail: pass marks are beginner estimates; each fail after the first eases that stage by 10% (max 30%) so nobody gets stuck
+const STAGES = [
+  {d: [{k: 'flick', n: 8, r: 2.6}], pass: {}},
+  {d: [{k: 'track', s: 8, r: 2.8, v: 0.8}], pass: {on: 0.35}},
+  {d: [{k: 'move', n: 5, v: 0.8}], pass: {}},
+  {d: [{k: 'flick', n: 10, r: 2.2}], pass: {t: 14}},
+  {d: [{k: 'track', s: 10, r: 2.4, v: 1}], pass: {on: 0.45}},
+  {d: [{k: 'move', n: 6, v: 1}], pass: {t: 16}},
+  {d: [{k: 'flick', n: 12, r: 1.7}], pass: {t: 16, miss: 4}},
+  {d: [{k: 'flick', n: 6, r: 2.2}, {k: 'move', n: 4, v: 1}, {k: 'track', s: 6, r: 2.4, v: 1}], pass: {t: 20, on: 0.4}},
+  {d: [{k: 'flick', n: 15, r: 2.2, life: 1.8, lives: 3}], pass: {}},
+  {d: [{k: 'flick', n: 18, r: 2.0, at: 3, s: 22}], pass: {}},
+  {d: [{k: 'move', n: 8, v: 1.3}], pass: {t: 18}},
+  {d: [{k: 'track', s: 10, r: 2.0, v: 1.35}], pass: {on: 0.4}},
+  {d: [{k: 'flick', n: 20, r: 1.9, life: 1.4, lives: 3, at: 2}], pass: {}},
+];
+const RANKS = [280, 250, 220, 190, 160, 130, 100, 75, 50, 30, 15, 5, 1];
+const pct = x => Math.round(x * 100) + '%', f1 = x => x.toFixed(1);
+
+const TX = {
+en: {
+  sub: 'Blue Lock aim training. Find your sensitivity, then clear 13 short stages, from your first touch to full pressure.',
+  name: 'Your name', game: 'Your game', sens: 'Your sensitivity in that game',
+  sensNote: 'The in-game mouse sensitivity, not the Windows mouse speed. Not sure? Leave the suggested number and press Find my sensitivity. Use the mouse, DPI and mousepad you play with. Esc pauses.',
+  find: 'Find my sensitivity (6 min)', have: 'I have my sensitivity: start training', cont: 'Continue',
+  names: ['First Touch', 'Lock On', 'On the Move', 'Quick Shot', 'Shadow', 'Chase', 'Sharpshooter', 'Full Field', 'Pressure', 'Swarm', 'Counterattack', 'Predator', 'Ego'],
+  hype: ['Every striker starts here.', 'Find it. Stay on it.', 'They move. So do you.', 'Now the clock is on.', 'Become its shadow.', 'Faster feet, faster eyes.', 'Small targets. Big ego.', 'The whole field is yours.', 'Pressure shows who you are.', 'Too many? One at a time.', 'They are faster now. Be faster.', 'Hunt it down.', 'Only one striker remains.'],
+  stage: i => 'Stage ' + i, rank: r => 'Blue Lock #' + r, go: 'GO', next: 'Next stage', retry: 'Try again', map: 'Stage map',
+  dFlick: d => `Hit ${d.n} targets` + (d.at > 1 ? `, ${d.at} at once` : '') + (d.life ? `. Each one vanishes after ${f1(d.life)} s; ${d.lives} lost ends the stage` : '') + (d.s ? `. Time limit ${Math.round(d.s)} s` : '') + '.',
+  dMove: d => `Hit ${d.n} moving targets while you strafe.`, dTrack: d => `Keep the crosshair on the ball for ${d.s} s.`,
+  pass: p => 'To pass: ' + ([p.t && `under ${f1(p.t)} s`, p.miss != null && `at most ${p.miss} misses`, p.on && `at least ${pct(p.on)} on target`].filter(Boolean).join(', ') || 'just finish it') + '.',
+  eased: e => `Coach: this stage is now ${pct(e - 1)} easier.`,
+  cleared: 'STAGE CLEAR', notYet: 'NOT YET',
+  why: {slow: x => `${f1(x)} s too slow. Click the moment the ball turns green.`, miss: (m, mx) => `${m} misses; the limit is ${mx}. Slow down a little: accuracy first, speed comes by itself.`,
+        on: (g, n) => `${pct(g)} on target; ${pct(n)} needed. Move your hand with the ball, not after it.`, lives: 'They got away. Look at the newest ball, not the last one.', cap: 'Time ran out. Take the closest ball first.'},
+  stopWin: 'Five stages today. The best moment to stop is on a win: your hands keep it overnight.',
+  grad: 'BLUE LOCK GRADUATE', gradSub: 'Rank 1. Replay any stage for three stars, and run Find my sensitivity again on another day to confirm your number.',
+  selT: (i, n) => `Selection ${i} of ${n}`, selB: 'Two weapons, A and B, each a different sensitivity. Play both; the better one survives. You do not need to judge anything.',
+  wA: 'Weapon A', wB: 'Weapon B', aDone: 'Weapon A done. Now weapon B.',
+  yours: 'YOUR WEAPON', rivals: g => g + ' sensitivity', typeIt: (s, g) => `In ${g}, set your mouse sensitivity to ${s} (both axes, if the game has two). Keep the same mouse and DPI setting.`,
+  other: 'The same feel in other games: ', dpi: "Know your mouse's DPI? ", cm: ' cm of mouse movement for one full turn',
+  set0: 'Run Find my sensitivity again on another day. When two results land within 10% of each other, your number has settled.',
+  setOk: (p, d, a) => `<b style="color:var(--ok)">Settled.</b> Last time you got ${p}, ${d} apart. Use the average: ${a}.`,
+  setNo: (p, d) => `Last time you got ${p}, ${d} apart, so it has not settled yet. Run it again another day; within 10% means settled.`,
+  keep: 'Then keep it: play with this number for at least a week before you change it.', train: 'Training begins',
+  hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} on target`, combo: c => `COMBO x${c}`, lives: 'Lives',
+  paused: 'Paused', restart: 'Restart', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
+  rawNote: '   (raw input not available, so turn off "Enhance pointer precision" in Windows)',
+  tiers: ['Bench', 'Reserve', 'Starter', 'Ace', 'Prodigy', 'World Class', 'Egoist'], tier: t => 'Rank: ' + t,
+  tierNote: 'Your rank comes from your stars and how few attempts each stage took. Three stars on the first try is perfect.', tierUp: (a, b) => `${a} &rarr; ${b}`,
+  lang: 'Magyar',
+},
+hu: {
+  sub: 'Blue Lock-célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig, az első érintéstől a teljes nyomásig.',
+  name: 'A neved', game: 'A játékod', sens: 'Az érzékenységed abban a játékban',
+  sensNote: 'A játékon belüli egérérzékenység, nem a Windows egérsebessége. Nem tudod? Hagyd a javasolt számot, és nyomd meg az Érzékenységem megkeresése gombot. Azt az egeret, DPI-t és egérpadot használd, amivel játszani szoktál. Az Esc megállítja.',
+  find: 'Érzékenységem megkeresése (6 perc)', have: 'Megvan az érzékenységem: kezdődjön az edzés', cont: 'Folytatás',
+  names: ['Első érintés', 'Célra tartás', 'Mozgásban', 'Gyors lövés', 'Árnyék', 'Üldözés', 'Mesterlövész', 'Teljes pálya', 'Nyomás', 'Raj', 'Ellentámadás', 'Ragadozó', 'Ego'],
+  hype: ['Minden csatár itt kezdi.', 'Találd meg, és maradj rajta.', 'Ők mozognak. Te is.', 'Most már megy az óra.', 'Légy az árnyéka.', 'Gyorsabb láb, gyorsabb szem.', 'Kis célpontok. Nagy ego.', 'Az egész pálya a tiéd.', 'A nyomás megmutatja, ki vagy.', 'Túl sok? Egyszerre csak egyet.', 'Most gyorsabbak. Légy te is gyorsabb.', 'Vadászd le.', 'Csak egy csatár marad.'],
+  stage: i => i + '. szint', rank: r => 'Blue Lock #' + r, go: 'RAJTA', next: 'Következő szint', retry: 'Újra', map: 'Szintek',
+  dFlick: d => `Találj el ${d.n} célpontot` + (d.at > 1 ? `, egyszerre ${d.at} van kint` : '') + (d.life ? `. Mindegyik ${f1(d.life).replace('.', ',')} mp után eltűnik; ha ${d.lives} elszökik, vége a szintnek` : '') + (d.s ? `. Időkorlát: ${Math.round(d.s)} mp` : '') + '.',
+  dMove: d => `Találj el ${d.n} mozgó célpontot, miközben oldalazol.`, dTrack: d => `Tartsd a célkeresztet a golyón ${d.s} másodpercig.`,
+  pass: p => 'A teljesítéshez: ' + ([p.t && `${f1(p.t).replace('.', ',')} mp alatt`, p.miss != null && `legfeljebb ${p.miss} hibával`, p.on && `legalább ${pct(p.on)} a célon`].filter(Boolean).join(', ') || 'csak érj a végére') + '.',
+  eased: e => `Edző: ez a szint most ${pct(e - 1)}-kal könnyebb.`,
+  cleared: 'SZINT TELJESÍTVE', notYet: 'MÉG NEM',
+  why: {slow: x => `${f1(x).replace('.', ',')} mp-cel lassabb. Abban a pillanatban kattints, amikor a golyó zöldre vált.`, miss: (m, mx) => `${m} hiba; a határ ${mx}. Lassíts egy kicsit: előbb a pontosság, a gyorsaság magától jön.`,
+        on: (g, n) => `${pct(g)} a célon; ${pct(n)} kellett. A golyóval együtt mozdítsd a kezed, ne utána.`, lives: 'Elszöktek. A legújabb golyót nézd, ne az előzőt.', cap: 'Lejárt az idő. Mindig a legközelebbi golyót vedd először.'},
+  stopWin: 'Ma már öt szint megvan. A legjobb győzelemmel abbahagyni: a kezed éjjel megjegyzi.',
+  grad: 'BLUE LOCK-VÉGZŐS', gradSub: 'Első hely. Bármelyik szintet újrajátszhatod a három csillagért, és egy másik napon futtasd újra az érzékenységkeresést, hogy megerősítsd a számodat.',
+  selT: (i, n) => `Válogatás: ${i}/${n}`, selB: 'Két fegyver, A és B, mindkettő más érzékenységgel. Játszd végig mindkettőt; a jobbik marad. Semmit nem kell megítélned.',
+  wA: 'A fegyver', wB: 'B fegyver', aDone: 'Az A fegyver kész. Most jön a B.',
+  yours: 'A TE FEGYVERED', rivals: g => g + '-érzékenység', typeIt: (s, g) => `A ${g} játékban állítsd az egérérzékenységet ${s} értékre (mindkét tengelyen, ha kettő van). Maradj ugyanannál az egérnél és DPI-beállításnál.`,
+  other: 'Ugyanez az érzés más játékokban: ', dpi: 'Tudod az egered DPI-értékét? ', cm: ' cm egérmozgás egy teljes körbeforduláshoz',
+  set0: 'Egy másik napon futtasd újra az érzékenységkeresést. Ha két eredmény 10%-on belül van egymáshoz, a számod beállt.',
+  setOk: (p, d, a) => `<b style="color:var(--ok)">Beállt.</b> Legutóbb ${p} lett, ${d} az eltérés. Használd az átlagot: ${a}.`,
+  setNo: (p, d) => `Legutóbb ${p} lett, ${d} az eltérés, így még nem állt be. Futtasd újra egy másik napon; 10%-on belül azt jelenti, beállt.`,
+  keep: 'Utána maradj ennél: legalább egy hétig játssz ezzel a számmal, mielőtt változtatsz rajta.', train: 'Kezdődik az edzés',
+  hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} a célon`, combo: c => `KOMBÓ x${c}`, lives: 'Életek',
+  paused: 'Szünet', restart: 'Újrakezdés', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
+  rawNote: '   (a nyers egérjel nem elérhető, ezért kapcsold ki a Windows egérbeállításaiban a mutatópontosság növelését)',
+  tiers: ['Kispad', 'Tartalék', 'Kezdő', 'Ász', 'Csodagyerek', 'Világklasszis', 'Egoista'], tier: t => 'Rang: ' + t,
+  tierNote: 'A rangod a csillagaidból jön, és abból, hány próbálkozás kellett egy-egy szinthez. Három csillag elsőre a tökéletes.', tierUp: (a, b) => `${a} &rarr; ${b}`,
+  lang: 'English',
+}};
+const L = TX[LANG];
+
+// ---------- state and storage ----------
+let rnd = Math.random;
+function seed(a) { rnd = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const ui = document.getElementById('ui'), cv = document.getElementById('c'), hud = document.getElementById('hud'), g = cv.getContext('2d');
+const DB = JSON.parse(localStorage.egopub_players || '{}');
+let NAME = localStorage.ego_name || '', RAW = false, MUTE = localStorage.ego_mute === '1';
+function me() { const P = DB[NAME] = DB[NAME] || {sens: START_SENS, stars: {}, cleared: 0, fails: {}, sel: [], day: '', today: 0}; P.tries = P.tries || {}; P.first = P.first || {}; return P; }
+// Seven ranks: per cleared stage, 10 points a star minus 3 for every extra attempt before the first clear; the average decides.
+const TIER_AT = [0, 8, 13, 17, 21, 25, 28];
+function tierOf(P) { const k = Object.keys(P.first); if (!k.length) return -1;
+  const avg = k.reduce((a, i) => a + Math.max(0, 10 * (P.stars[i] || 0) - 3 * (P.first[i] - 1)), 0) / k.length;
+  let t = 0; TIER_AT.forEach((x, j) => { if (avg >= x) t = j; }); return t; }
+const tierHtml = P => { const t = tierOf(P); return t < 0 ? '' : `<div class="rank" style="font-size:26px">${L.tier(L.tiers[t])}</div><div class="dim">${L.tiers.map((x, j) => j === t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div>`; };
+function save() { localStorage.egopub_players = JSON.stringify(DB); }
+const ease = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 1));
+const rankOf = c => c ? RANKS[c - 1] : 300;
+
+function show(html) { ui.style.display = 'flex'; cv.style.display = 'none'; hud.style.display = 'none'; ui.innerHTML = '<div class="card">' + html + '</div>'; }
+async function lock() {
+  try { await cv.requestPointerLock({unadjustedMovement: true}); RAW = true; }
+  catch (e) { RAW = false; try { await cv.requestPointerLock(); } catch (e2) {} }
+}
+function unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
+let AC;
+function snd(f, d, type = 'triangle', v = 0.08) {
+  if (MUTE) return;
+  try { AC = AC || new AudioContext(); const o = AC.createOscillator(), gn = AC.createGain(), t = AC.currentTime;
+    o.type = type; o.frequency.value = f; gn.gain.setValueAtTime(v, t); gn.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(gn).connect(AC.destination); o.start(t); o.stop(t + d); } catch (e) {}
+}
+const tune = (fs, gap, d) => fs.forEach((f, i) => setTimeout(() => snd(f, d, 'triangle', 0.1), i * gap));
+
+// ---------- screens ----------
+function intro() {
+  const P = NAME && DB[NAME];
+  show(`<div class="tag">Blue Lock</div><h1>EGO <span>AIM</span></h1><p>${L.sub}</p>
+  <p>${L.name}: <input id="nm" value="${NAME}" placeholder="Player" maxlength="24"> &nbsp; ${L.game}: <select id="gm" onchange="pickGame(this.value)">${GAMES.map((g, j) => `<option value="${j}"${j === GAME ? ' selected' : ''}>${g[0]}</option>`).join('')}</select>
+  &nbsp; ${L.sens}: <input id="sens" value="${P ? P.sens.toFixed(2) : START_SENS}"></p>
+  <p class="dim">${L.sensNote}</p>
+  ${P && P.cleared ? `<button id="go" onclick="enter('map')">${L.cont}</button>` : ''}<button ${P && P.cleared ? 'class="alt"' : 'id="go"'} onclick="enter('find')">${L.find}</button><button class="alt" onclick="enter('train')">${L.have}</button><button class="alt" onclick="localStorage.ego_lang='${LANG === 'hu' ? 'en' : 'hu'}';location.reload()">${L.lang}</button>`);
+}
+// Switching game converts the number in the box and every saved player, so the feel stays the same.
+function pickGame(j) { const v = +document.getElementById('sens').value.replace(',', '.'), old = YAW; GAME = +j; YAW = GAMES[GAME][1]; localStorage.ego_game = GAME;
+  document.getElementById('sens').value = v > 0 ? (v * old / YAW).toFixed(2) : defSens();
+  for (const n in DB) { DB[n].sens *= old / YAW; (DB[n].sel || []).forEach(x => x.sens *= old / YAW); } save(); }
+function enter(kind) {
+  NAME = document.getElementById('nm').value.replace(/["'`<>&\\]/g, '').trim().slice(0, 24) || 'Player'; localStorage.ego_name = NAME;
+  const v = +document.getElementById('sens').value.replace(',', '.');
+  if (v > 0.05 && v < 50) me().sens = v; save();
+  if (kind === 'find') return selStart();
+  map();
+}
+function map() {
+  const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
+  const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
+    return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
+  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(rankOf(P.cleared))}</div><p class="dim">${L.tierNote}</p><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>
+  <div class="grid">${tiles}</div>
+  <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button>`);
+}
+function goalText(i) {
+  const s = STAGES[i], e = ease(i), d = s.d.map(x => scaled(x, e));
+  return d.map(x => x.k === 'flick' ? L.dFlick(x) : x.k === 'move' ? L.dMove(x) : L.dTrack(x)).join(' ') + ' ' + (d.some(x => x.life || x.s) && !Object.keys(s.pass).length ? '' : L.pass(need(i)));
+}
+function scaled(x, e) { const y = Object.assign({}, x); if (y.life) y.life *= e; if (y.s && y.k === 'flick') y.s *= e; if (y.lives && e > 1) y.lives++; return y; }
+function need(i) { const p = STAGES[i].pass, e = ease(i), o = {};
+  if (p.t) o.t = p.t * e; if (p.miss != null) o.miss = Math.ceil(p.miss * e); if (p.on) o.on = p.on / e; return o; }
+function stageIntro(i) {
+  const e = ease(i);
+  show(`<div class="tag">${L.stage(i + 1)} &nbsp; ${L.rank(rankOf(me().cleared))}</div><h2>${L.names[i]}</h2><div class="hype">${L.hype[i]}</div>
+  <p>${goalText(i)}</p>${e > 1 ? `<p class="dim">${L.eased(e)}</p>` : ''}
+  <button id="go" onclick="playStage(${i})">${L.go}</button><button class="alt" onclick="map()">${L.map}</button>`);
+}
+function playStage(i) {
+  const e = ease(i), P = me(); if (!(i in P.first)) { P.tries[i] = (P.tries[i] || 0) + 1; save(); }
+  play(STAGES[i].d.map(x => scaled(x, e)), L.stage(i + 1) + ' - ' + L.names[i], me().sens, Date.now(), (res, why) => judgeStage(i, res, why));
+}
+function judgeStage(i, res, why) {
+  const P = me(), n = need(i), clickT = res.filter(r => r.k !== 'track').reduce((a, r) => a + r.time, 0);
+  const miss = res.reduce((a, r) => a + r.misses, 0), tr = res.find(r => r.k === 'track'), d0 = res[0];
+  if (!why && n.t && clickT > n.t) why = L.why.slow(clickT - n.t);
+  if (!why && n.miss != null && miss > n.miss) why = L.why.miss(miss, n.miss);
+  if (!why && n.on && tr.on < n.on) why = L.why.on(tr.on, n.on);
+  if (why) { P.fails[i] = (P.fails[i] || 0) + 1; save(); tune([392, 330, 262], 130, 0.22);
+    return show(`<div class="tag">${L.stage(i + 1)} - ${L.names[i]}</div><div class="fail">${L.notYet}</div><p>${why}</p>${ease(i) > e0(i) ? `<p class="dim">${L.eased(ease(i))}</p>` : ''}
+    <button id="go" onclick="playStage(${i})">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`); }
+  // Stars from the margin over the pass mark; untimed stages count misses, life stages count lives kept.
+  const m = [];
+  if (n.t) m.push((n.t - clickT) / n.t);
+  if (n.on) m.push((tr.on - n.on) / n.on);
+  if (d0.lives) m.push(d0.left === d0.lives ? 0.3 : d0.left > 1 ? 0.15 : 0);
+  if (d0.cap) m.push((d0.cap - d0.time) / d0.cap);
+  if (!m.length) m.push(miss === 0 ? 0.3 : miss <= 2 ? 0.15 : 0);
+  const mm = Math.min(...m), stars = mm >= 0.25 ? 3 : mm >= 0.1 ? 2 : 1, first = i >= P.cleared, before = rankOf(P.cleared), t0 = tierOf(P);
+  if (!(i in P.first)) P.first[i] = P.tries[i] || 1;
+  P.stars[i] = Math.max(P.stars[i] || 0, stars); P.fails[i] = 0; if (first) P.cleared = i + 1;
+  const today = new Date().toDateString(); if (P.day !== today) { P.day = today; P.today = 0; } P.today++; save();
+  tune([523, 659, 784, 1047], 110, 0.3);
+  const grad = first && i === STAGES.length - 1;
+  show(`<div class="tag">${L.stage(i + 1)} - ${L.names[i]}</div><div class="clear">${grad ? L.grad : L.cleared}</div>
+  <div class="stars">${'★'.repeat(stars)}<i>${'★'.repeat(3 - stars)}</i></div>
+  ${first ? `<div class="rank">${L.rank(before)} &rarr; ${L.rank(rankOf(P.cleared))}</div>` : ''}${t0 >= 0 && tierOf(P) !== t0 ? `<div class="rank" style="font-size:26px">${L.tier(L.tierUp(L.tiers[t0], L.tiers[tierOf(P)]))}</div>` : t0 < 0 ? tierHtml(P) : ''}
+  ${grad ? `${tierHtml(P)}<p>${L.gradSub}</p>` : i + 1 < STAGES.length ? `<div class="hype">${L.hype[i + 1]}</div>` : ''}
+  ${P.today === 5 ? `<p class="dim">${L.stopWin}</p>` : ''}
+  ${i + 1 < STAGES.length ? `<button id="go" onclick="stageIntro(${i + 1})">${L.next}</button><button class="alt" onclick="playStage(${i})">${L.retry}</button>` : ''}<button ${i + 1 < STAGES.length ? 'class="alt"' : 'id="go"'} onclick="map()">${L.map}</button>`);
+}
+const e0 = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 2));   // ease before this fail
+
+// ---------- selection: blind A/B search for the sensitivity ----------
+let SS = null;
+function selStart() { SS = {i: 0, center: me().sens, hist: []}; selRound(); }
+function selRound() {
+  if (SS.i >= SEL.length) return reveal();
+  const k = SEL[SS.i], lo = SS.center * k, hi = SS.center / k;
+  SS.ab = Math.random() < .5 ? [lo, hi] : [hi, lo]; SS.res = []; SS.sd = (Math.random() * 1e9) | 0;
+  show(`<div class="tag">${L.selT(SS.i + 1, SEL.length)}</div><div class="bar"><i style="width:${SS.i / SEL.length * 100}%"></i></div><p>${L.selB}</p>
+  <button id="go" onclick="selPlay(0)">${L.wA}</button>`);
+}
+function selPlay(j) {
+  play(TRIAL, L.selT(SS.i + 1, SEL.length) + ' - ' + (j ? L.wB : L.wA), SS.ab[j], SS.sd, res => {
+    SS.res[j] = res;
+    if (!j) return show(`<div class="tag">${L.selT(SS.i + 1, SEL.length)}</div><h2>${L.aDone}</h2><button id="go" onclick="selPlay(1)">${L.wB}</button>`);
+    const sc = r => [r[0].n / r[0].time, r[1].n / r[1].time, r[2].on], a = sc(SS.res[0]), b = sc(SS.res[1]), e = 1e-3;
+    const edge = a.reduce((s, x, k) => s + Math.log((x + e) / (b[k] + e)), 0) / 3, win = edge >= 0 ? SS.ab[0] : SS.ab[1];
+    SS.center = Math.sqrt(SS.center * win);   // step halfway (in log space) toward the winner
+    SS.i++; snd(880, 0.15); selRound();
+  });
+}
+function reveal() {
+  const P = me(), s = SS.center, prev = P.sel.slice(-1)[0];
+  P.sel.push({sens: s, at: new Date().toISOString()}); P.sens = s; save(); tune([523, 784, 1047], 140, 0.35);
+  const diff = prev ? Math.abs(s - prev.sens) / Math.max(s, prev.sens) : 0;
+  const settle = !prev ? L.set0 : diff <= 0.10 ? L.setOk(prev.sens.toFixed(2), pct(diff), Math.sqrt(s * prev.sens).toFixed(2)) : L.setNo(prev.sens.toFixed(2), pct(diff));
+  const games = GAMES.filter((g, j) => j !== GAME).map(([n, y]) => `${n} <b>${(s * YAW / y).toFixed(y < 0.01 ? 2 : 3)}</b>`).join(' &nbsp; ');
+  show(`<div class="tag">${L.yours}</div><div class="dim">${L.rivals(GAMES[GAME][0])}</div><div class="big">${s.toFixed(2)}</div>
+  <p>${L.typeIt(s.toFixed(2), GAMES[GAME][0])}</p><p class="dim">${L.other}${games}</p>
+  <p class="dim">${L.dpi}<input id="dpi" placeholder="800" oninput="cm360()"> <span id="cmo"></span></p>
+  <p>${settle}</p><p>${L.keep}</p><button id="go" onclick="map()">${L.train}</button>`);
+}
+function cm360() { const d = +document.getElementById('dpi').value; document.getElementById('cmo').textContent = d >= 100 ? f1(914.4 / (d * me().sens * YAW)) + L.cm : ''; }
+
+// ---------- aim world ----------
+let mode = '', cam = {y: 0, p: 0}, dpc = 0, T = [], FX = [], run = null, raf = 0, last = 0, cd0 = 0, cdk = 0, PL = [0, 0];
+const R = d => d * Math.PI / 180;
+function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+addEventListener('resize', resize);
+function dir(y, p) { return [Math.cos(p) * Math.sin(y), Math.sin(p), Math.cos(p) * Math.cos(y)]; }
+function proj(y, p) {
+  const [x, yy, z] = dir(y, p), cy = Math.cos(cam.y), sy = Math.sin(cam.y), cp = Math.cos(cam.p), sp = Math.sin(cam.p);
+  const x1 = x * cy - z * sy, z1 = x * sy + z * cy, y2 = yy * cp - z1 * sp, z2 = yy * sp + z1 * cp;
+  if (z2 < 0.05) return null; const f = (cv.width / 2) / Math.tan(HFOV / 2);
+  return [cv.width / 2 + x1 / z2 * f, cv.height / 2 - y2 / z2 * f, f / z2];
+}
+function angTo(y, p) { const a = dir(cam.y, cam.p), b = dir(y, p); return Math.acos(Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])); }
+function draw(now) {
+  g.fillStyle = '#060a14'; g.fillRect(0, 0, cv.width, cv.height);
+  g.strokeStyle = '#14203a'; g.lineWidth = 1;
+  for (let k = -24; k < 24; k++) { const y = Math.round(cam.y / R(15)) * R(15) + k * R(15); g.beginPath(); let on = false;
+    for (let p = -60; p <= 60; p += 5) { const s = proj(y, R(p)); if (s) { on ? g.lineTo(s[0], s[1]) : g.moveTo(s[0], s[1]); on = true; } else on = false; } g.stroke(); }
+  for (let p = -60; p <= 60; p += 10) { g.strokeStyle = p === 0 ? '#24406e' : '#14203a'; g.beginPath(); let on = false;
+    for (let d = -100; d <= 100; d += 4) { const s = proj(cam.y + R(d), R(p)); if (s) { on ? g.lineTo(s[0], s[1]) : g.moveTo(s[0], s[1]); on = true; } else on = false; } g.stroke(); }
+  for (const t of T) { const s = proj(t.y, t.p); if (!s) continue; const r = Math.max(3, s[2] * Math.tan(t.r)), on = angTo(t.y, t.p) < t.r;
+    g.fillStyle = on ? '#36d07a' : '#ff4d5e'; g.beginPath(); g.arc(s[0], s[1], r, 0, 7); g.fill(); g.strokeStyle = '#ffffff44'; g.stroke();
+    if (t.life) { g.strokeStyle = '#00d8ff'; g.lineWidth = 3; g.beginPath(); g.arc(s[0], s[1], r + 6, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.max(0, 1 - (now - t.t0) / t.life)); g.stroke(); g.lineWidth = 1; } }
+  FX = FX.filter(f => now - f.t0 < 260);
+  for (const f of FX) { const s = proj(f.y, f.p); if (!s) continue; const a = (now - f.t0) / 260;
+    g.strokeStyle = `rgba(0,216,255,${1 - a})`; g.lineWidth = 3; g.beginPath(); g.arc(s[0], s[1], s[2] * Math.tan(f.r) + 30 * a, 0, 7); g.stroke(); g.lineWidth = 1; }
+  const cx = cv.width / 2, cy = cv.height / 2; g.fillStyle = '#fff'; g.fillRect(cx - 1, cy - 9, 2, 6); g.fillRect(cx - 1, cy + 3, 2, 6); g.fillRect(cx - 9, cy - 1, 6, 2); g.fillRect(cx + 3, cy - 1, 6, 2);
+}
+function bigText(t) { g.fillStyle = '#00d8ff'; g.font = '900 140px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, cv.width / 2, cv.height / 2 - 120); }
+
+// A play = a list of drills. flick: n hits (at = targets at once, life = seconds before a target escapes, lives, s = time cap);
+// move: n strafing enemies while she strafes too; track: s seconds on a strafing ball.
+async function play(drills, label, sens, sd, done) {
+  dpc = R(sens * YAW); cam = {y: 0, p: 0}; seed(sd); T = []; FX = [];
+  run = {drills, label, sens, sd, done, di: 0, res: [], combo: 0};
+  ui.style.display = 'none'; cv.style.display = 'block'; hud.style.display = 'block'; hud.textContent = label; resize();
+  await lock(); mode = 'count'; cd0 = last = performance.now(); cdk = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
+}
+const D = () => run.drills[run.di];
+function startDrill(now) {
+  const d = D(); run.ds = {t0: now, hits: 0, misses: 0, on: 0, frames: 0, left: d.lives || 0}; T = [];
+  if (d.k === 'flick') fill(now);
+  else if (d.k === 'move') { PL = [0, 0]; run.pv = 4; spawnMover(now); }
+  else T = [{y: cam.y + R(8), p: 0, r: R(d.r), v: R(45) * d.v}];
+}
+function fill(now) { const d = D(); while (T.length < (d.at || 1) && run.ds.hits + T.length < d.n) spawnFlick(now); }
+function spawnFlick(now) {
+  const d = D(), side = rnd() < .5 ? -1 : 1, a = R((d.life ? 10 : 15) + rnd() * (d.life ? 45 : 75));
+  T.push({y: cam.y + side * a, p: Math.max(R(-25), Math.min(R(25), cam.p + R((rnd() - .5) * 24))), r: R(d.r), t0: now, life: d.life ? d.life * 1000 : 0});
+}
+// Moving drill: an enemy 8-14 m away strafes at 5-8 m/s (hero run speed) while she is strafed left/right too.
+function placeMover(t) { const dx = t.x - PL[0], dz = t.z - PL[1], dd = Math.hypot(dx, dz);
+  t.y = Math.atan2(dx, dz); t.p = Math.atan2(t.h, dd); t.r = Math.atan(0.45 / dd); }
+function spawnMover(now) { const side = rnd() < .5 ? -1 : 1, a = cam.y + side * R(15 + rnd() * 45), dd = 8 + rnd() * 6;
+  const t = {x: PL[0] + dd * Math.sin(a), z: PL[1] + dd * Math.cos(a), ux: Math.cos(a), uz: -Math.sin(a), v: (rnd() < .5 ? -1 : 1) * (5 + rnd() * 3) * D().v, h: -0.2 + rnd() * 0.6, t0: now};
+  placeMover(t); T = [t]; }
+function aimMove(e) { cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); }
+function finishDrill(now) {
+  const d = D(), s = run.ds, el = (now - s.t0) / 1000;
+  run.res.push({k: d.k, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0});
+  run.di++; if (run.di >= run.drills.length) return endPlay(null);
+  startDrill(now);
+}
+function endPlay(why) { mode = ''; T = []; cancelAnimationFrame(raf); unlock(); run.done(run.res, why); }
+function tick(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (mode === 'count') {
+    const k = 3 - Math.floor((now - cd0) / 450);
+    if (k !== cdk) { cdk = k; k > 0 ? snd(660, 0.1) : snd(990, 0.2); }
+    if (k <= 0) { mode = 'aim'; startDrill(now); } else { draw(now); bigText(k); raf = requestAnimationFrame(tick); return; }
+  }
+  if (mode !== 'aim') return;
+  const d = D(), s = run.ds, el = (now - s.t0) / 1000;
+  let h = run.label + '   ';
+  if (d.k === 'flick') {
+    for (const t of T.slice()) {
+      if (t.life && now - t.t0 > t.life) { T.splice(T.indexOf(t), 1); s.left--; s.misses++; run.combo = 0; snd(150, 0.15, 'sawtooth', 0.05); if (s.left <= 0) return endPlay(L.why.lives); }
+      else if (!t.life && now - t.t0 > 4000) { T.splice(T.indexOf(t), 1); s.misses += 2; }
+    }
+    if (d.s && el > d.s) return endPlay(L.why.cap);
+    fill(now);
+    h += L.hudHits(s.hits, d.n) + '   ' + f1(el + 0.25 * s.misses) + ' s' + (d.s ? ' / ' + Math.round(d.s) + ' s' : '') + (d.lives ? '   ' + L.lives + ' ' + '●'.repeat(Math.max(0, s.left)) : '');
+  } else if (d.k === 'move') {
+    if (Math.random() < dt * 1.2) run.pv = -run.pv;
+    PL[0] += run.pv * dt * Math.cos(cam.y); PL[1] -= run.pv * dt * Math.sin(cam.y);
+    const t = T[0]; if (Math.random() < dt * 1.5) t.v = -t.v;
+    t.x += t.v * dt * t.ux; t.z += t.v * dt * t.uz; placeMover(t);
+    if (now - t.t0 > 5000) { s.misses += 2; spawnMover(now); }
+    h += L.hudHits(s.hits, d.n) + '   ' + f1(el + 0.25 * s.misses) + ' s';
+  } else {
+    const t = T[0];
+    if (Math.random() < dt * 0.9) t.v = -Math.sign(t.v) * R(30 + Math.random() * 45) * d.v;
+    t.y += t.v * dt; t.p = R(4 * Math.sin(el * 1.3));
+    s.frames++; if (angTo(t.y, t.p) < t.r) s.on++;
+    h += f1(Math.max(0, d.s - el)) + ' s   ' + L.hudOn(s.on / Math.max(1, s.frames));
+    if (el >= d.s) return finishDrill(now);
+  }
+  if (run.combo >= 3) h += '   ' + L.combo(run.combo);
+  hud.textContent = h + (RAW ? '' : L.rawNote);
+  draw(now); raf = requestAnimationFrame(tick);
+}
+function aimDown() {
+  const d = D(); if (d.k === 'track') return;
+  const now = performance.now(), s = run.ds, t = T.find(t => angTo(t.y, t.p) < t.r);
+  if (!t) { s.misses++; run.combo = 0; snd(140, 0.1, 'sawtooth', 0.04); return; }
+  s.hits++; run.combo++; FX.push({y: t.y, p: t.p, r: t.r, t0: now}); snd(520 + 25 * Math.min(run.combo, 24), 0.09);
+  if (s.hits >= d.n) return finishDrill(now);
+  if (d.k === 'flick') { T.splice(T.indexOf(t), 1); fill(now); } else spawnMover(now);
+}
+
+// ---------- input wiring ----------
+document.addEventListener('mousemove', e => { if (document.pointerLockElement && mode === 'aim') aimMove(e); });
+document.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement && mode === 'aim') aimDown(); });
+document.addEventListener('keydown', e => {   // Space or Enter presses the main button, so retries are instant
+  if ((e.code === 'Space' || e.code === 'Enter') && !document.pointerLockElement && e.target.tagName !== 'INPUT') { const b = document.getElementById('go'); if (b) { e.preventDefault(); b.click(); } }
+});
+document.addEventListener('pointerlockchange', () => {
+  if (!document.pointerLockElement && (mode === 'aim' || mode === 'count')) { mode = ''; cancelAnimationFrame(raf);
+    show(`<h2>${L.paused}</h2><button id="go" onclick="play(run.drills, run.label, run.sens, run.sd, run.done)">${L.restart}</button>`); }
+});
+intro();
+</script></body></html>
