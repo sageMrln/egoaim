@@ -200,7 +200,7 @@ const api = (path, body) => fetch(BOARD.replace(/\/$/, '') + path, {method: 'POS
   .then(r => r.json().then(o => (o.status = r.status, o)));
 function push(now) { clearTimeout(PUSH); if (!ONLINE || !DB[NAME]) return Promise.resolve(); const go = () => api('/save', {n: NAME, tok: TOKS[NAME], data: DB[NAME]}).catch(() => {});
   if (now) return go(); PUSH = setTimeout(go, 2500); return Promise.resolve(); }
-const tierHtml = P => { const t = tierOf(P); return t < 0 ? `<div class="hype" style="font-size:17px">${L.rtNone}</div>` : `<div class="rank" style="font-size:26px">${L.tier(L.tiers[t])}</div><div class="dim">${L.tiers.map((x, j) => j === t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div>`; };
+const tierHtml = P => { const t = tierOf(P); return t < 0 ? `<div class="hype" style="font-size:17px">${L.rtNone}</div>` : `<div class="rank" style="font-size:26px">${L.rank(t)}</div><div class="dim">${L.tiers.map((x, j) => j === t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div>`; };
 function save() { localStorage.egopub_players = JSON.stringify(DB); push(); }
 const ease = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 1));
 const rankOf = c => c ? RANKS[c - 1] : 300;
@@ -261,7 +261,7 @@ function map() {
   const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
   const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
-  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(tierOf(P))}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
+  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
   <div class="grid">${tiles}</div>
   <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
