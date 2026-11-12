@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate"><title>EGO AIM - aim trainer and sensitivity finder</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Find your mouse sensitivity with a blind A/B test, convert it between games, and climb 13 Blue Lock style aim stages.">
+<html lang="en" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate"><title>EGO AIM - aim trainer and sensitivity finder</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Find your mouse sensitivity with a blind A/B test, convert it between games, and climb 13 sword-style aim stages.">
 <style>
 :root{--bg:#05070d;--card:#0c1220;--line:#1c2840;--txt:#e6ecf7;--dim:#8391ab;--acc:#2f7bff;--acc2:#00d8ff;--ok:#36d07a;--bad:#ff4d5e;--gold:#ffc83d}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:radial-gradient(ellipse at 50% 0%,#0d1a33 0%,var(--bg) 60%);color:var(--txt);font:17px/1.5 "Segoe UI",system-ui,sans-serif;overflow:hidden}
@@ -60,13 +60,13 @@ const pct = x => Math.round(x * 100) + '%', f1 = x => x.toFixed(1);
 
 const TX = {
 en: {
-  sub: 'Blue Lock aim training. Find your sensitivity, then clear 13 short stages, from your first touch to full pressure.',
+  sub: 'Sword-style aim training. Find your sensitivity, then clear 13 short stages, from your first swing to the Sword God trial.',
   name: 'Your name', game: 'Your game', sens: 'Your sensitivity in that game',
   sensNote: 'The in-game mouse sensitivity, not the Windows mouse speed. Not sure? Leave the suggested number and press Find my sensitivity. Use the mouse, DPI and mousepad you play with. Esc pauses.',
   find: 'Find my sensitivity (6 min)', have: 'I have my sensitivity: start training', cont: 'Continue',
-  names: ['First Touch', 'Lock On', 'On the Move', 'Quick Shot', 'Shadow', 'Chase', 'Sharpshooter', 'Full Field', 'Pressure', 'Swarm', 'Counterattack', 'Predator', 'Ego'],
-  hype: ['Every striker starts here.', 'Find it. Stay on it.', 'They move. So do you.', 'Now the clock is on.', 'Become its shadow.', 'Faster feet, faster eyes.', 'Small targets. Big ego.', 'The whole field is yours.', 'Pressure shows who you are.', 'Too many? One at a time.', 'They are faster now. Be faster.', 'Hunt it down.', 'Only one striker remains.'],
-  stage: i => 'Stage ' + i, rank: r => 'Blue Lock #' + r, go: 'GO', next: 'Next stage', retry: 'Try again', map: 'Stage map',
+  names: ['First Swing', 'Water Stance', 'Footwork', 'Quick Draw', 'Flowing Water', 'Pursuit', 'Point Strike', 'Three Styles', 'Under Pressure', 'Many Blades', 'North God Feint', 'Sword of Light', 'Sword God'],
+  hype: ['Every swordsman starts with one swing.', 'Hold the stance. Stay on it.', 'They move. So do you.', 'Draw faster than the clock.', 'Flow with it, never against it.', 'Chase them down.', 'A small target asks for a true blade.', 'Sword God, Water God, North God: all three at once.', 'Pressure shows your true rank.', 'Too many blades? One at a time.', 'They feint faster now. Be faster.', 'Faster than the eye can follow.', 'Only one Sword God remains.'],
+  stage: i => 'Stage ' + i, rank: r => 'Sword Sanctum #' + r, go: 'GO', next: 'Next stage', retry: 'Try again', map: 'Stage map',
   dFlick: d => `Hit ${d.n} targets` + (d.at > 1 ? `, ${d.at} at once` : '') + (d.life ? `. Each one vanishes after ${f1(d.life)} s; ${d.lives} lost ends the stage` : '') + (d.s ? `. Time limit ${Math.round(d.s)} s` : '') + '.',
   dMove: d => `Hit ${d.n} moving targets while you strafe.`, dTrack: d => `Keep the crosshair on the ball for ${d.s} s.`,
   pass: p => 'To pass: ' + ([p.t && `under ${f1(p.t)} s`, p.miss != null && `at most ${p.miss} misses`, p.on && `at least ${pct(p.on)} on target`].filter(Boolean).join(', ') || 'just finish it') + '.',
@@ -75,7 +75,7 @@ en: {
   why: {slow: x => `${f1(x)} s too slow. Click the moment the ball turns green.`, miss: (m, mx) => `${m} misses; the limit is ${mx}. Slow down a little: accuracy first, speed comes by itself.`,
         on: (g, n) => `${pct(g)} on target; ${pct(n)} needed. Move your hand with the ball, not after it.`, lives: 'They got away. Look at the newest ball, not the last one.', cap: 'Time ran out. Take the closest ball first.'},
   stopWin: 'Five stages today. The best moment to stop is on a win: your hands keep it overnight.',
-  grad: 'BLUE LOCK GRADUATE', gradSub: 'Rank 1. Replay any stage for three stars, and run Find my sensitivity again on another day to confirm your number.',
+  grad: 'SWORD SANCTUM MASTER', gradSub: 'Rank 1. Replay any stage for three stars, and run Find my sensitivity again on another day to confirm your number.',
   selT: (i, n) => `Selection ${i} of ${n}`, selB: 'Two weapons, A and B, each a different sensitivity. Play both; the better one survives. You do not need to judge anything.',
   wA: 'Weapon A', wB: 'Weapon B', aDone: 'Weapon A done. Now weapon B.',
   yours: 'YOUR WEAPON', rivals: g => g + ' sensitivity', typeIt: (s, g) => `In ${g}, set your mouse sensitivity to ${s} (both axes, if the game has two). Keep the same mouse and DPI setting.`,
@@ -100,13 +100,13 @@ en: {
   bHead: ['Player', 'Rank', 'Points', 'Stars', 'Stages'], top: 'Top 10, all players', pw: 'Password', pwNote: 'Your profile is saved online: the same name and password bring it back on any PC. Use a password only for this game.', offline: 'The server could not be reached, so this session is saved on this PC only.', errs: {'wrong password': 'Wrong password for that name. New here? Pick another name.', locked: 'Too many wrong passwords. That name is locked for an hour.', 'slow down': 'Wait two seconds, then press again.', 'name or password': 'Type a name and a password of at least 4 characters.'},
 },
 hu: {
-  sub: 'Blue Lock-célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig, az első érintéstől a teljes nyomásig.',
+  sub: 'Kardstílusú célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig, az első suhintástól a Kardisten próbájáig.',
   name: 'A neved', game: 'A játékod', sens: 'Az érzékenységed abban a játékban',
   sensNote: 'A játékon belüli egérérzékenység, nem a Windows egérsebessége. Nem tudod? Hagyd a javasolt számot, és nyomd meg az Érzékenységem megkeresése gombot. Azt az egeret, DPI-t és egérpadot használd, amivel játszani szoktál. Az Esc megállítja.',
   find: 'Érzékenységem megkeresése (6 perc)', have: 'Megvan az érzékenységem: kezdődjön az edzés', cont: 'Folytatás',
-  names: ['Első érintés', 'Célra tartás', 'Mozgásban', 'Gyors lövés', 'Árnyék', 'Üldözés', 'Mesterlövész', 'Teljes pálya', 'Nyomás', 'Raj', 'Ellentámadás', 'Ragadozó', 'Ego'],
-  hype: ['Minden csatár itt kezdi.', 'Találd meg, és maradj rajta.', 'Ők mozognak. Te is.', 'Most már megy az óra.', 'Légy az árnyéka.', 'Gyorsabb láb, gyorsabb szem.', 'Kis célpontok. Nagy ego.', 'Az egész pálya a tiéd.', 'A nyomás megmutatja, ki vagy.', 'Túl sok? Egyszerre csak egyet.', 'Most gyorsabbak. Légy te is gyorsabb.', 'Vadászd le.', 'Csak egy csatár marad.'],
-  stage: i => i + '. szint', rank: r => 'Blue Lock #' + r, go: 'RAJTA', next: 'Következő szint', retry: 'Újra', map: 'Szintek',
+  names: ['Első suhintás', 'Vízállás', 'Lábmunka', 'Gyors kardrántás', 'Áramló víz', 'Üldözés', 'Pontos döfés', 'Három stílus', 'Nyomás alatt', 'Sok penge', 'Az Északi isten cselje', 'A fény kardja', 'Kardisten'],
+  hype: ['Minden kardforgató egy suhintással kezdi.', 'Tartsd az állást. Maradj rajta.', 'Ők mozognak. Te is.', 'Rántsd ki gyorsabban, mint az óra.', 'Áramolj vele, sose ellene.', 'Üldözd le őket.', 'A kis célpont igaz pengét kíván.', 'Kardisten, Vízisten, Északi isten: mind a három egyszerre.', 'A nyomás megmutatja, mi a rangod.', 'Túl sok penge? Egyszerre csak egyet.', 'Most gyorsabban cseleznek. Légy te is gyorsabb.', 'Gyorsabb, mint ahogy a szem követi.', 'Csak egy Kardisten marad.'],
+  stage: i => i + '. szint', rank: r => 'Kardszentély #' + r, go: 'RAJTA', next: 'Következő szint', retry: 'Újra', map: 'Szintek',
   dFlick: d => `Találj el ${d.n} célpontot` + (d.at > 1 ? `, egyszerre ${d.at} van kint` : '') + (d.life ? `. Mindegyik ${f1(d.life).replace('.', ',')} mp után eltűnik; ha ${d.lives} elszökik, vége a szintnek` : '') + (d.s ? `. Időkorlát: ${Math.round(d.s)} mp` : '') + '.',
   dMove: d => `Találj el ${d.n} mozgó célpontot, miközben oldalazol.`, dTrack: d => `Tartsd a célkeresztet a golyón ${d.s} másodpercig.`,
   pass: p => 'A teljesítéshez: ' + ([p.t && `${f1(p.t).replace('.', ',')} mp alatt`, p.miss != null && `legfeljebb ${p.miss} hibával`, p.on && `legalább ${pct(p.on)} a célon`].filter(Boolean).join(', ') || 'csak érj a végére') + '.',
@@ -115,7 +115,7 @@ hu: {
   why: {slow: x => `${f1(x).replace('.', ',')} mp-cel lassabb. Abban a pillanatban kattints, amikor a golyó zöldre vált.`, miss: (m, mx) => `${m} hiba; a határ ${mx}. Lassíts egy kicsit: előbb a pontosság, a gyorsaság magától jön.`,
         on: (g, n) => `${pct(g)} a célon; ${pct(n)} kellett. A golyóval együtt mozdítsd a kezed, ne utána.`, lives: 'Elszöktek. A legújabb golyót nézd, ne az előzőt.', cap: 'Lejárt az idő. Mindig a legközelebbi golyót vedd először.'},
   stopWin: 'Ma már öt szint megvan. A legjobb győzelemmel abbahagyni: a kezed éjjel megjegyzi.',
-  grad: 'BLUE LOCK-VÉGZŐS', gradSub: 'Első hely. Bármelyik szintet újrajátszhatod a három csillagért, és egy másik napon futtasd újra az érzékenységkeresést, hogy megerősítsd a számodat.',
+  grad: 'A KARDSZENTÉLY MESTERE', gradSub: 'Első hely. Bármelyik szintet újrajátszhatod a három csillagért, és egy másik napon futtasd újra az érzékenységkeresést, hogy megerősítsd a számodat.',
   selT: (i, n) => `Válogatás: ${i}/${n}`, selB: 'Két fegyver, A és B, mindkettő más érzékenységgel. Játszd végig mindkettőt; a jobbik marad. Semmit nem kell megítélned.',
   wA: 'A fegyver', wB: 'B fegyver', aDone: 'Az A fegyver kész. Most jön a B.',
   yours: 'A TE FEGYVERED', rivals: g => g + '-érzékenység', typeIt: (s, g) => `A ${g} játékban állítsd az egérérzékenységet ${s} értékre (mindkét tengelyen, ha kettő van). Maradj ugyanannál az egérnél és DPI-beállításnál.`,
@@ -228,7 +228,7 @@ const tune = (fs, gap, d) => fs.forEach((f, i) => setTimeout(() => snd(f, d, 'tr
 // ---------- screens ----------
 function intro() {
   const P = NAME && DB[NAME];
-  show(`<div class="tag">Blue Lock</div><h1>EGO <span>AIM</span></h1>${CHAL ? `<div class="hype" style="font-size:19px">${L.chal(CHAL.n, L.tiers[CHAL.t], CHAL.p)}</div>` : ''}<p>${L.sub}</p>
+  show(`<div class="tag">Sword Sanctum</div><h1>EGO <span>AIM</span></h1>${CHAL ? `<div class="hype" style="font-size:19px">${L.chal(CHAL.n, L.tiers[CHAL.t], CHAL.p)}</div>` : ''}<p>${L.sub}</p>
   <p>${L.name}: <input id="nm" value="${NAME}" placeholder="Player" maxlength="24"> &nbsp; ${L.pw}: <input id="pw" type="password" maxlength="64" value="${PW.replace(/"/g, '&quot;')}" style="width:130px"> &nbsp; ${L.game}: <select id="gm" onchange="pickGame(this.value)">${GAMES.map((g, j) => `<option value="${j}"${j === GAME ? ' selected' : ''}>${g[0]}</option>`).join('')}</select>
   &nbsp; <span style="white-space:nowrap">${L.sens}: <input id="sens" value="${P ? P.sens.toFixed(2) : START_SENS}"></span></p><p class="dim">${L.pwNote}</p><div id="msg" class="hype" style="font-size:16px"></div>
   <p class="dim">${L.sensNote}</p>
