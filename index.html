@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate"><title>EGO AIM - aim trainer and sensitivity finder</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Find your mouse sensitivity with a blind A/B test, convert it between games, and climb 13 sword-style aim stages.">
+<html lang="en" translate="no"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://egoaim-board.sagemrln.workers.dev; base-uri 'none'; form-action 'none'"><meta name="google" content="notranslate"><title>North God Aim - aim trainer and sensitivity finder</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Find your mouse sensitivity with a blind A/B test, convert it between games, and climb 13 aim stages.">
 <style>
 :root{--bg:#05070d;--card:#0c1220;--line:#1c2840;--txt:#e6ecf7;--dim:#8391ab;--acc:#2f7bff;--acc2:#00d8ff;--ok:#36d07a;--bad:#ff4d5e;--gold:#ffc83d}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:radial-gradient(ellipse at 50% 0%,#0d1a33 0%,var(--bg) 60%);color:var(--txt);font:17px/1.5 "Segoe UI",system-ui,sans-serif;overflow:hidden}
@@ -26,20 +26,16 @@ select,input{background:#070b14;color:var(--txt);border:1px solid var(--line);bo
 </style></head><body>
 <canvas id="c"></canvas><div id="hud"></div><div id="ui"></div>
 <script>
+if (top !== self) top.location = self.location;
 'use strict';
-// EGO AIM. Selection = a blind A/B search (the PSA method) for the sensitivity she aims best with. Training = 13 short
-// stages (20-40 s each) eased from untimed first touches to pressure stages, with stars, a rank climb and sound.
-// Built for a short attention span: one goal per stage, instant feedback, instant retry, failure text that says what to change.
-// Mouse counts map straight to degrees via each game's yaw (degrees turned per mouse count at sensitivity 1), so no DPI is needed.
 const LANG = (localStorage.ego_lang || navigator.language || 'en').slice(0, 2) === 'hu' ? 'hu' : 'en';
-const GAMES = [['Valorant', 0.07], ['Counter-Strike 2', 0.022], ['Apex Legends', 0.022], ['Overwatch 2', 0.0066], ['Marvel Rivals', 0.0175]];   // last one derived, not published
+const GAMES = [['Valorant', 0.07], ['Counter-Strike 2', 0.022], ['Apex Legends', 0.022], ['Overwatch 2', 0.0066], ['Marvel Rivals', 0.0175]];
 let GAME = +(localStorage.ego_game || 0) % GAMES.length, YAW = GAMES[GAME][1];
-const defSens = () => +(0.0327 / YAW).toFixed(2);   // about 35 cm per full turn at 800 DPI, a middle-of-the-road start
+const defSens = () => +(0.0327 / YAW).toFixed(2);
 const START_SENS = defSens();
 const HFOV = 103 * Math.PI / 180;
 const SEL = [1.8, 1.5, 1.3, 1.15, 1.07, 1.03];
 const TRIAL = [{k: 'flick', n: 6, r: 2.2}, {k: 'move', n: 4, v: 1}, {k: 'track', s: 6, r: 2.4, v: 1}];
-// ponytail: pass marks are beginner estimates; each fail after the first eases that stage by 10% (max 30%) so nobody gets stuck
 const STAGES = [
   {d: [{k: 'flick', n: 8, r: 2.6}], pass: {}},
   {d: [{k: 'track', s: 8, r: 2.8, v: 0.8}], pass: {on: 0.35}},
@@ -60,13 +56,13 @@ const pct = x => Math.round(x * 100) + '%', f1 = x => x.toFixed(1);
 
 const TX = {
 en: {
-  sub: 'Sword-style aim training. Find your sensitivity, then clear 13 short stages, from your first swing to the Sword God trial.',
+  sub: 'Aim training. Find your sensitivity, then clear 13 short stages up to the final test.',
   name: 'Your name', game: 'Your game', sens: 'Your sensitivity in that game',
   sensNote: 'The in-game mouse sensitivity, not the Windows mouse speed. Not sure? Leave the suggested number and press Find my sensitivity. Use the mouse, DPI and mousepad you play with. Esc pauses.',
   find: 'Find my sensitivity (6 min)', have: 'I have my sensitivity: start training', cont: 'Continue',
-  names: ['First Swing', 'Water Stance', 'Footwork', 'Quick Draw', 'Flowing Water', 'Pursuit', 'Point Strike', 'Three Styles', 'Under Pressure', 'Many Blades', 'North God Feint', 'Sword of Light', 'Sword God'],
-  hype: ['Every swordsman starts with one swing.', 'Hold the stance. Stay on it.', 'They move. So do you.', 'Draw faster than the clock.', 'Flow with it, never against it.', 'Chase them down.', 'A small target asks for a true blade.', 'Sword God, Water God, North God: all three at once.', 'Pressure shows your true rank.', 'Too many blades? One at a time.', 'They feint faster now. Be faster.', 'Faster than the eye can follow.', 'Only one Sword God remains.'],
-  stage: i => 'Stage ' + i, rank: r => 'Sword Sanctum #' + r, go: 'GO', next: 'Next stage', retry: 'Try again', map: 'Stage map',
+  names: ['First Shot', 'Lock On', 'On the Move', 'Quick Shot', 'Tracking', 'Chase', 'Precision', 'Full Mix', 'Under Pressure', 'Swarm', 'Counter Strafe', 'Fast Tracking', 'Final Test'],
+  hype: ['Start simple: click each target.', 'Keep your crosshair on it.', 'Hit them while you both move.', 'Same flicks, now against the clock.', 'Smoother tracking, smaller target.', 'Moving targets, against the clock.', 'Smaller targets: precision first.', 'Flick, move and track in one run.', 'Targets escape: take the closest first.', 'Three at once. Take them one at a time.', 'Faster movers. Stay calm.', 'Fast target: stay on it.', 'The last stage.'],
+  stage: i => 'Stage ' + i, rank: r => 'Aim Sanctum #' + r, go: 'GO', next: 'Next stage', retry: 'Try again', map: 'Stage map',
   dFlick: d => `Hit ${d.n} targets` + (d.at > 1 ? `, ${d.at} at once` : '') + (d.life ? `. Each one vanishes after ${f1(d.life)} s; ${d.lives} lost ends the stage` : '') + (d.s ? `. Time limit ${Math.round(d.s)} s` : '') + '.',
   dMove: d => `Hit ${d.n} moving targets while you strafe.`, dTrack: d => `Keep the crosshair on the ball for ${d.s} s.`,
   pass: p => 'To pass: ' + ([p.t && `under ${f1(p.t)} s`, p.miss != null && `at most ${p.miss} misses`, p.on && `at least ${pct(p.on)} on target`].filter(Boolean).join(', ') || 'just finish it') + '.',
@@ -75,7 +71,7 @@ en: {
   why: {slow: x => `${f1(x)} s too slow. Click the moment the ball turns green.`, miss: (m, mx) => `${m} misses; the limit is ${mx}. Slow down a little: accuracy first, speed comes by itself.`,
         on: (g, n) => `${pct(g)} on target; ${pct(n)} needed. Move your hand with the ball, not after it.`, lives: 'They got away. Look at the newest ball, not the last one.', cap: 'Time ran out. Take the closest ball first.'},
   stopWin: 'Five stages today. The best moment to stop is on a win: your hands keep it overnight.',
-  grad: 'SWORD SANCTUM MASTER', gradSub: 'Rank 1. Replay any stage for three stars, and run Find my sensitivity again on another day to confirm your number.',
+  grad: 'ALL STAGES CLEARED', gradSub: 'Rank 1. Replay any stage for three stars, and run Find my sensitivity again on another day to confirm your number.',
   selT: (i, n) => `Selection ${i} of ${n}`, selB: 'Two weapons, A and B, each a different sensitivity. Play both; the better one survives. You do not need to judge anything.',
   wA: 'Weapon A', wB: 'Weapon B', aDone: 'Weapon A done. Now weapon B.',
   yours: 'YOUR WEAPON', rivals: g => g + ' sensitivity', typeIt: (s, g) => `In ${g}, set your mouse sensitivity to ${s} (both axes, if the game has two). Keep the same mouse and DPI setting.`,
@@ -95,18 +91,18 @@ en: {
   rtRes: (ms, fl, on) => `Reaction ${ms} ms &middot; ${fl} s per flick &middot; ${on} on target`, rtTop: p => `Top ${p} of players`, rtNone: 'No rank yet. Take the Rank Test.',
   rtBest: (t, p) => `Your best: ${t}, top ${p}`,
   share: 'Challenge friends', copied: 'Copied. Paste it to your friends.', pts: p => p + ' pts',
-  shareTxt: (t, p, st, link) => `I am ${t} in EGO AIM with ${p} points and ${st} stars. Beat me: ${link}`,
+  shareTxt: (t, p, st, link) => `I am ${t} in North God Aim with ${p} points and ${st} stars. Beat me: ${link}`,
   board: 'Friends board', you: 'you', chal: (n, t, p) => `<b>${n}</b> challenges you: ${t}, ${p} points. Clear stages to beat them.`,
   bHead: ['Player', 'Rank', 'Points', 'Stars', 'Stages'], top: 'Top 10, all players', pw: 'Password', pwNote: 'Your profile is saved online: the same name and password bring it back on any PC. Use a password only for this game.', offline: 'The server could not be reached, so this session is saved on this PC only.', errs: {'wrong password': 'Wrong password for that name. New here? Pick another name.', locked: 'Too many wrong passwords. That name is locked for an hour.', 'slow down': 'Wait two seconds, then press again.', 'name or password': 'Type a name and a password of at least 4 characters.'},
 },
 hu: {
-  sub: 'Kardstílusú célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig, az első suhintástól a Kardisten próbájáig.',
+  sub: 'Célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig az utolsó próbáig.',
   name: 'A neved', game: 'A játékod', sens: 'Az érzékenységed abban a játékban',
   sensNote: 'A játékon belüli egérérzékenység, nem a Windows egérsebessége. Nem tudod? Hagyd a javasolt számot, és nyomd meg az Érzékenységem megkeresése gombot. Azt az egeret, DPI-t és egérpadot használd, amivel játszani szoktál. Az Esc megállítja.',
   find: 'Érzékenységem megkeresése (6 perc)', have: 'Megvan az érzékenységem: kezdődjön az edzés', cont: 'Folytatás',
-  names: ['Első suhintás', 'Vízállás', 'Lábmunka', 'Gyors kardrántás', 'Áramló víz', 'Üldözés', 'Pontos döfés', 'Három stílus', 'Nyomás alatt', 'Sok penge', 'Az Északi isten cselje', 'A fény kardja', 'Kardisten'],
-  hype: ['Minden kardforgató egy suhintással kezdi.', 'Tartsd az állást. Maradj rajta.', 'Ők mozognak. Te is.', 'Rántsd ki gyorsabban, mint az óra.', 'Áramolj vele, sose ellene.', 'Üldözd le őket.', 'A kis célpont igaz pengét kíván.', 'Kardisten, Vízisten, Északi isten: mind a három egyszerre.', 'A nyomás megmutatja, mi a rangod.', 'Túl sok penge? Egyszerre csak egyet.', 'Most gyorsabban cseleznek. Légy te is gyorsabb.', 'Gyorsabb, mint ahogy a szem követi.', 'Csak egy Kardisten marad.'],
-  stage: i => i + '. szint', rank: r => 'Kardszentély #' + r, go: 'RAJTA', next: 'Következő szint', retry: 'Újra', map: 'Szintek',
+  names: ['Első lövés', 'Célra tartás', 'Mozgásban', 'Gyors lövés', 'Követés', 'Üldözés', 'Pontosság', 'Vegyes', 'Nyomás alatt', 'Raj', 'Ellenmozgás', 'Gyors követés', 'Utolsó próba'],
+  hype: ['Kezdjük egyszerűen: kattints minden célra.', 'Tartsd rajta a célkeresztet.', 'Találd el, miközben mindketten mozogtok.', 'Ugyanaz, most az óra ellen.', 'Simább követés, kisebb cél.', 'Mozgó célok, az óra ellen.', 'Kisebb célok: előbb a pontosság.', 'Célravetés, mozgás és követés egy menetben.', 'A célok elszöknek: a legközelebbit előbb.', 'Három egyszerre. Egyenként vedd le őket.', 'Gyorsabb célok. Maradj nyugodt.', 'Gyors cél: maradj rajta.', 'Az utolsó szint.'],
+  stage: i => i + '. szint', rank: r => 'Célzószentély #' + r, go: 'RAJTA', next: 'Következő szint', retry: 'Újra', map: 'Szintek',
   dFlick: d => `Találj el ${d.n} célpontot` + (d.at > 1 ? `, egyszerre ${d.at} van kint` : '') + (d.life ? `. Mindegyik ${f1(d.life).replace('.', ',')} mp után eltűnik; ha ${d.lives} elszökik, vége a szintnek` : '') + (d.s ? `. Időkorlát: ${Math.round(d.s)} mp` : '') + '.',
   dMove: d => `Találj el ${d.n} mozgó célpontot, miközben oldalazol.`, dTrack: d => `Tartsd a célkeresztet a golyón ${d.s} másodpercig.`,
   pass: p => 'A teljesítéshez: ' + ([p.t && `${f1(p.t).replace('.', ',')} mp alatt`, p.miss != null && `legfeljebb ${p.miss} hibával`, p.on && `legalább ${pct(p.on)} a célon`].filter(Boolean).join(', ') || 'csak érj a végére') + '.',
@@ -115,7 +111,7 @@ hu: {
   why: {slow: x => `${f1(x).replace('.', ',')} mp-cel lassabb. Abban a pillanatban kattints, amikor a golyó zöldre vált.`, miss: (m, mx) => `${m} hiba; a határ ${mx}. Lassíts egy kicsit: előbb a pontosság, a gyorsaság magától jön.`,
         on: (g, n) => `${pct(g)} a célon; ${pct(n)} kellett. A golyóval együtt mozdítsd a kezed, ne utána.`, lives: 'Elszöktek. A legújabb golyót nézd, ne az előzőt.', cap: 'Lejárt az idő. Mindig a legközelebbi golyót vedd először.'},
   stopWin: 'Ma már öt szint megvan. A legjobb győzelemmel abbahagyni: a kezed éjjel megjegyzi.',
-  grad: 'A KARDSZENTÉLY MESTERE', gradSub: 'Első hely. Bármelyik szintet újrajátszhatod a három csillagért, és egy másik napon futtasd újra az érzékenységkeresést, hogy megerősítsd a számodat.',
+  grad: 'MINDEN SZINT TELJESÍTVE', gradSub: 'Első hely. Bármelyik szintet újrajátszhatod a három csillagért, és egy másik napon futtasd újra az érzékenységkeresést, hogy megerősítsd a számodat.',
   selT: (i, n) => `Válogatás: ${i}/${n}`, selB: 'Két fegyver, A és B, mindkettő más érzékenységgel. Játszd végig mindkettőt; a jobbik marad. Semmit nem kell megítélned.',
   wA: 'A fegyver', wB: 'B fegyver', aDone: 'Az A fegyver kész. Most jön a B.',
   yours: 'A TE FEGYVERED', rivals: g => g + '-érzékenység', typeIt: (s, g) => `A ${g} játékban állítsd az egérérzékenységet ${s} értékre (mindkét tengelyen, ha kettő van). Maradj ugyanannál az egérnél és DPI-beállításnál.`,
@@ -135,27 +131,18 @@ hu: {
   rtRes: (ms, fl, on) => `Reakció ${ms} ms &middot; ${fl} mp célonként &middot; ${on} a célon`, rtTop: p => `A játékosok legjobb ${p}-a`, rtNone: 'Még nincs rangod. Csináld meg a Rangtesztet.',
   rtBest: (t, p) => `A legjobbad: ${t}, legjobb ${p}`,
   share: 'Kihívom a barátaimat', copied: 'Kimásolva. Küldd el a barátaidnak.', pts: p => p + ' pont',
-  shareTxt: (t, p, st, link) => `${t} vagyok az EGO AIM-ben, ${p} ponttal és ${st} csillaggal. Győzz le: ${link}`,
+  shareTxt: (t, p, st, link) => `${t} vagyok a North God Aimben, ${p} ponttal és ${st} csillaggal. Győzz le: ${link}`,
   board: 'Baráti ranglista', you: 'te', chal: (n, t, p) => `<b>${n}</b> kihív téged: ${t}, ${p} pont. Teljesíts szinteket, hogy legyőzd.`,
   bHead: ['Játékos', 'Rang', 'Pont', 'Csillag', 'Szint'], top: 'Top 10, minden játékos', pw: 'Jelszó', pwNote: 'A profilod online mentődik: ugyanazzal a névvel és jelszóval bármelyik gépen visszakapod. Csak ehhez a játékhoz használt jelszót adj meg.', offline: 'A szerver nem érhető el, ezért ez a játék csak ezen a gépen mentődik.', errs: {'wrong password': 'Rossz jelszó ehhez a névhez. Új vagy? Válassz másik nevet.', locked: 'Túl sok rossz jelszó. Ez a név egy órára zárolva.', 'slow down': 'Várj két másodpercet, aztán nyomd meg újra.', 'name or password': 'Írj be egy nevet és legalább 4 karakteres jelszót.'},
 }};
 const L = TX[LANG];
 
-// ---------- state and storage ----------
 let rnd = Math.random;
 function seed(a) { rnd = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const ui = document.getElementById('ui'), cv = document.getElementById('c'), hud = document.getElementById('hud'), g = cv.getContext('2d');
 const DB = JSON.parse(localStorage.egopub_players || '{}');
 let NAME = localStorage.ego_name || '', RAW = false, MUTE = localStorage.ego_mute === '1';
 function me() { const P = DB[NAME] = DB[NAME] || {sens: START_SENS, stars: {}, cleared: 0, fails: {}, sel: [], day: '', today: 0}; P.tries = P.tries || {}; P.first = P.first || {}; return P; }
-// Seven ranks from the Rank Test, as shares of real players from the top. God = a pro esports profile: aim at the model's skilled
-// end plus a 170 ms reaction scores z 2.61, about the top 0.45% (Aimlabs: its elite ranks are the top 0.17% of 270,106 ranked PC
-// players); Emperor top 3% (Aimlabs Topaz); King top 10%; Saint top 25% (Aimlabs
-// Platinum); Advanced top 40% (40% sit in Aimlabs Iron); Intermediate top 60% (around the median); Beginner the rest.
-// Reaction: Human Benchmark, median about 270 ms and about 187 ms at the 89th percentile, so log-normal with sigma 0.30.
-// Flick and tracking have no public population data: rankcal.js runs simulated players (sim.js model) through the same test.
-// ASSUMED: the model's beginner end (330 ms reaction) is the 25th percentile and its skilled end (170 ms, the reported pro
-// range) the top 0.2%. Aim counts 80%, reaction 20%: pros stand out in aim far more than in raw reaction.
 const RK_Z = [-0.253, 0.253, 0.674, 1.282, 1.881, 2.61];
 const RK_FL = /*FL*/[2.148, 1.979, 1.837, 1.68, 1.553, 1.412, 1.275, 1.157, 1.035, 0.916, 0.809]/*FL*/, RK_ON = /*ON*/[0.018, 0.028, 0.029, 0.03, 0.103, 0.219, 0.339, 0.521, 0.672, 0.707, 0.735]/*ON*/;
 function zOf(tab, x) { const n = tab.length - 1; let i = 0; while (i < n - 1 && (tab[i + 1] - x) * (tab[n] - tab[0]) <= 0) i++;
@@ -175,15 +162,14 @@ function judgeRank(res, why) {
   ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
   <button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
 }
-// Points: the same per-stage score that sets the rank, summed (max 390).
 const ptsOf = P => Object.keys(P.first).reduce((a, i) => a + Math.max(0, 10 * (P.stars[i] || 0) - 3 * (P.first[i] - 1)), 0);
 const starsOf = P => Object.values(P.stars).reduce((a, x) => a + x, 0);
 const clean = x => String(x).replace(/[^\p{L}\p{N} _.-]/gu, '').slice(0, 24) || '?';
 const FR = JSON.parse(localStorage.egopub_friends || '{}');
 function card(P) { return {n: NAME, t: Math.max(0, tierOf(P)), p: ptsOf(P), s: starsOf(P), c: P.cleared}; }
-function fromCode(code) {   // untrusted: anyone can craft a link, so every field is cleaned and clamped
+function fromCode(code) {
   try { const o = JSON.parse(decodeURIComponent(escape(atob(code.replace(/-/g, '+').replace(/_/g, '/')))));
-    const c = Math.max(0, Math.min(13, o.c | 0));   // points and stars can never exceed what that many stages can give
+    const c = Math.max(0, Math.min(13, o.c | 0));
     return {n: clean(o.n), t: Math.max(0, Math.min(6, o.t | 0)), p: Math.max(0, Math.min(30 * c, o.p | 0)), s: Math.max(0, Math.min(3 * c, o.s | 0)), c}; } catch (e) { return null; } }
 const toCode = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 let CHAL = null;
@@ -195,16 +181,15 @@ function boardHtml(P) { const rows = Object.values(FR).filter(f => f.n !== NAME)
   if (rows.length < 2) return '';
   return `<h2 style="margin-top:18px;font-size:20px">${L.board}</h2><table style="width:100%;font-size:15px;border-collapse:collapse">` + `<tr class="dim"><td>#</td>${L.bHead.map(h => `<td>${h}</td>`).join('')}</tr>` +
     rows.map((f, j) => `<tr style="${f.me ? 'color:var(--acc2);font-weight:700' : ''}"><td>${j + 1}</td><td>${clean(f.n)}${f.me ? ' (' + L.you + ')' : ''}</td><td>${L.tiers[f.t]}</td><td>${f.p}</td><td>${f.s}</td><td>${f.c}/13</td></tr>`).join('') + '</table>'; }
-const BOARD = 'https://egoaim-board.sagemrln.workers.dev/';   // Cloudflare Worker, ~/scratch/mousetest/board
+const BOARD = 'https://egoaim-board.sagemrln.workers.dev/';
 const topHtml = rows => `<h2 style="margin-top:18px;font-size:20px">${L.top}</h2><table style="width:100%;font-size:15px;border-collapse:collapse"><tr class="dim"><td>#</td>${L.bHead.map(h => `<td>${h}</td>`).join('')}</tr>` +
   rows.map((f, j) => `<tr style="${f.n === NAME ? 'color:var(--acc2);font-weight:700' : ''}"><td>${j + 1}</td><td>${clean(f.n)}</td><td>${L.tiers[Math.max(0, Math.min(6, f.t | 0))]}</td><td>${f.p | 0}</td><td>${f.s | 0}</td><td>${f.c | 0}/13</td></tr>`).join('') + '</table>';
 function loadTop() { push(true).then(() => fetch(BOARD)).then(r => r.json()).then(rows => { const el = document.getElementById('top10'); if (el && Array.isArray(rows) && rows.length) el.innerHTML = topHtml(rows); }).catch(() => {}); }
-// Profiles: the name + password live on the server, so the same link remembers everyone from any PC.
-let PW = localStorage.ego_pw || '', ONLINE = false, PUSH = 0;
+let PW = '', ONLINE = false, PUSH = 0; const TOKS = JSON.parse(localStorage.ego_toks || '{}'); delete localStorage.ego_pw;
 const api = (path, body) => fetch(BOARD.replace(/\/$/, '') + path, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)})
   .then(r => r.json().then(o => (o.status = r.status, o)));
-function push(now) { clearTimeout(PUSH); if (!ONLINE || !DB[NAME]) return Promise.resolve(); const go = () => api('/save', {n: NAME, pw: PW, data: DB[NAME]}).catch(() => {});
-  if (now) return go(); PUSH = setTimeout(go, 2500); return Promise.resolve(); }   // saves wait 2.5 s, the map flushes at once
+function push(now) { clearTimeout(PUSH); if (!ONLINE || !DB[NAME]) return Promise.resolve(); const go = () => api('/save', {n: NAME, tok: TOKS[NAME], data: DB[NAME]}).catch(() => {});
+  if (now) return go(); PUSH = setTimeout(go, 2500); return Promise.resolve(); }
 const tierHtml = P => { const t = tierOf(P); return t < 0 ? `<div class="hype" style="font-size:17px">${L.rtNone}</div>` : `<div class="rank" style="font-size:26px">${L.tier(L.tiers[t])}</div><div class="dim">${L.tiers.map((x, j) => j === t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div>`; };
 function save() { localStorage.egopub_players = JSON.stringify(DB); push(); }
 const ease = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 1));
@@ -225,31 +210,30 @@ function snd(f, d, type = 'triangle', v = 0.08) {
 }
 const tune = (fs, gap, d) => fs.forEach((f, i) => setTimeout(() => snd(f, d, 'triangle', 0.1), i * gap));
 
-// ---------- screens ----------
 function intro() {
   const P = NAME && DB[NAME];
-  show(`<div class="tag">Sword Sanctum</div><h1>EGO <span>AIM</span></h1>${CHAL ? `<div class="hype" style="font-size:19px">${L.chal(CHAL.n, L.tiers[CHAL.t], CHAL.p)}</div>` : ''}<p>${L.sub}</p>
-  <p>${L.name}: <input id="nm" value="${NAME}" placeholder="Player" maxlength="24"> &nbsp; ${L.pw}: <input id="pw" type="password" maxlength="64" value="${PW.replace(/"/g, '&quot;')}" style="width:130px"> &nbsp; ${L.game}: <select id="gm" onchange="pickGame(this.value)">${GAMES.map((g, j) => `<option value="${j}"${j === GAME ? ' selected' : ''}>${g[0]}</option>`).join('')}</select>
+  show(`<div class="tag">Aim Sanctum</div><h1>NORTH GOD <span>AIM</span></h1>${CHAL ? `<div class="hype" style="font-size:19px">${L.chal(CHAL.n, L.tiers[CHAL.t], CHAL.p)}</div>` : ''}<p>${L.sub}</p>
+  <p>${L.name}: <input id="nm" value="${NAME}" placeholder="Player" maxlength="24"> &nbsp; ${L.pw}: <input id="pw" type="password" maxlength="64" value="" placeholder="${TOKS[NAME] ? 'saved' : ''}" style="width:130px"> &nbsp; ${L.game}: <select id="gm" onchange="pickGame(this.value)">${GAMES.map((g, j) => `<option value="${j}"${j === GAME ? ' selected' : ''}>${g[0]}</option>`).join('')}</select>
   &nbsp; <span style="white-space:nowrap">${L.sens}: <input id="sens" value="${P ? P.sens.toFixed(2) : START_SENS}"></span></p><p class="dim">${L.pwNote}</p><div id="msg" class="hype" style="font-size:16px"></div>
   <p class="dim">${L.sensNote}</p>
   ${P && P.cleared ? `<button id="go" onclick="enter('map')">${L.cont}</button>` : ''}<button ${P && P.cleared ? 'class="alt"' : 'id="go"'} onclick="enter('find')">${L.find}</button><button class="alt" onclick="enter('train')">${L.have}</button><button class="alt" onclick="localStorage.ego_lang='${LANG === 'hu' ? 'en' : 'hu'}';location.reload()">${L.lang}</button>`);
 }
-// Switching game converts the number in the box and every saved player, so the feel stays the same.
 function pickGame(j) { const v = +document.getElementById('sens').value.replace(',', '.'), old = YAW; GAME = +j; YAW = GAMES[GAME][1]; localStorage.ego_game = GAME;
   document.getElementById('sens').value = v > 0 ? (v * old / YAW).toFixed(2) : defSens();
   for (const n in DB) { DB[n].sens *= old / YAW; (DB[n].sel || []).forEach(x => x.sens *= old / YAW); } save(); }
 function enter(kind) {
   NAME = document.getElementById('nm').value.replace(/["'`<>&\\]/g, '').trim().slice(0, 24) || 'Player'; localStorage.ego_name = NAME;
   const v = +document.getElementById('sens').value.replace(',', '.');
-  PW = document.getElementById('pw').value; localStorage.ego_pw = PW;
+  PW = document.getElementById('pw').value;
   const go = () => { if (v > 0.05 && v < 50) me().sens = v; save(); if (kind === 'find') return selStart(); map(); }, msg = t => { document.getElementById('msg').textContent = t; };
-  if (PW.length < 4) return msg(L.errs['name or password']);
-  api('/login', {n: NAME, pw: PW, data: DB[NAME] || null}).then(o => {
-    if (o.err) return msg(L.errs[o.err] || o.err);
+  if (PW.length < 4 && !TOKS[NAME]) return msg(L.errs['name or password']);
+  api('/login', Object.assign(PW ? {pw: PW} : {tok: TOKS[NAME]}, {n: NAME, data: DB[NAME] || null})).then(o => {
+    if (o.err) { if (!PW) { delete TOKS[NAME]; localStorage.ego_toks = JSON.stringify(TOKS); } return msg(L.errs[o.err] || o.err); }
+    PW = ''; if (o.tok) { TOKS[o.n || NAME] = o.tok; localStorage.ego_toks = JSON.stringify(TOKS); }
     ONLINE = true; if (o.n && o.n !== NAME) { DB[o.n] = DB[NAME]; delete DB[NAME]; NAME = o.n; localStorage.ego_name = NAME; }
-    const here = DB[NAME];   // keep whichever copy has more stages, the server's wins a tie
+    const here = DB[NAME];
     if (o.data && (!here || (o.data.cleared | 0) >= (here.cleared | 0))) DB[NAME] = o.data;
-    if (here && here.rk && (!DB[NAME].rk || rkScore(here.rk).z > rkScore(DB[NAME].rk).z)) DB[NAME].rk = here.rk;   // the better Rank Test survives
+    if (here && here.rk && (!DB[NAME].rk || rkScore(here.rk).z > rkScore(DB[NAME].rk).z)) DB[NAME].rk = here.rk;
     go();
   }, () => { ONLINE = false; alert(L.offline); go(); });
 }
@@ -287,7 +271,6 @@ function judgeStage(i, res, why) {
   if (why) { P.fails[i] = (P.fails[i] || 0) + 1; save(); tune([392, 330, 262], 130, 0.22);
     return show(`<div class="tag">${L.stage(i + 1)} - ${L.names[i]}</div><div class="fail">${L.notYet}</div><p>${why}</p>${ease(i) > e0(i) ? `<p class="dim">${L.eased(ease(i))}</p>` : ''}
     <button id="go" onclick="playStage(${i})">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`); }
-  // Stars from the margin over the pass mark; untimed stages count misses, life stages count lives kept.
   const m = [];
   if (n.t) m.push((n.t - clickT) / n.t);
   if (n.on) m.push((tr.on - n.on) / n.on);
@@ -307,9 +290,8 @@ function judgeStage(i, res, why) {
   ${P.today === 5 ? `<p class="dim">${L.stopWin}</p>` : ''}
   ${i + 1 < STAGES.length ? `<button id="go" onclick="stageIntro(${i + 1})">${L.next}</button><button class="alt" onclick="playStage(${i})">${L.retry}</button>` : ''}<button ${i + 1 < STAGES.length ? 'class="alt"' : 'id="go"'} onclick="map()">${L.map}</button>`);
 }
-const e0 = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 2));   // ease before this fail
+const e0 = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 2));
 
-// ---------- selection: blind A/B search for the sensitivity ----------
 let SS = null;
 function selStart() { SS = {i: 0, center: me().sens, hist: []}; selRound(); }
 function selRound() {
@@ -325,7 +307,7 @@ function selPlay(j) {
     if (!j) return show(`<div class="tag">${L.selT(SS.i + 1, SEL.length)}</div><h2>${L.aDone}</h2><button id="go" onclick="selPlay(1)">${L.wB}</button>`);
     const sc = r => [r[0].n / r[0].time, r[1].n / r[1].time, r[2].on], a = sc(SS.res[0]), b = sc(SS.res[1]), e = 1e-3;
     const edge = a.reduce((s, x, k) => s + Math.log((x + e) / (b[k] + e)), 0) / 3, win = edge >= 0 ? SS.ab[0] : SS.ab[1];
-    SS.center = Math.sqrt(SS.center * win);   // step halfway (in log space) toward the winner
+    SS.center = Math.sqrt(SS.center * win);
     SS.i++; snd(880, 0.15); selRound();
   });
 }
@@ -342,7 +324,6 @@ function reveal() {
 }
 function cm360() { const d = +document.getElementById('dpi').value; document.getElementById('cmo').textContent = d >= 100 ? f1(914.4 / (d * me().sens * YAW)) + L.cm : ''; }
 
-// ---------- aim world ----------
 let mode = '', cam = {y: 0, p: 0}, dpc = 0, T = [], FX = [], run = null, raf = 0, last = 0, cd0 = 0, cdk = 0, PL = [0, 0];
 const R = d => d * Math.PI / 180;
 function resize() { cv.width = innerWidth; cv.height = innerHeight; }
@@ -372,8 +353,6 @@ function draw(now) {
 }
 function bigText(t) { g.fillStyle = '#00d8ff'; g.font = '900 140px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, cv.width / 2, cv.height / 2 - 120); }
 
-// A play = a list of drills. flick: n hits (at = targets at once, life = seconds before a target escapes, lives, s = time cap);
-// move: n strafing enemies while she strafes too; track: s seconds on a strafing ball.
 async function play(drills, label, sens, sd, done) {
   dpc = R(sens * YAW); cam = {y: 0, p: 0}; seed(sd); T = []; FX = [];
   run = {drills, label, sens, sd, done, di: 0, res: [], combo: 0};
@@ -393,7 +372,6 @@ function spawnFlick(now) {
   const d = D(), side = rnd() < .5 ? -1 : 1, a = R((d.life ? 10 : 15) + rnd() * (d.life ? 45 : 75));
   T.push({y: cam.y + side * a, p: Math.max(R(-25), Math.min(R(25), cam.p + R((rnd() - .5) * 24))), r: R(d.r), t0: now, life: d.life ? d.life * 1000 : 0});
 }
-// Moving drill: an enemy 8-14 m away strafes at 5-8 m/s (hero run speed) while she is strafed left/right too.
 function placeMover(t) { const dx = t.x - PL[0], dz = t.z - PL[1], dd = Math.hypot(dx, dz);
   t.y = Math.atan2(dx, dz); t.p = Math.atan2(t.h, dd); t.r = Math.atan(0.45 / dd); }
 function spawnMover(now) { const side = rnd() < .5 ? -1 : 1, a = cam.y + side * R(15 + rnd() * 45), dd = 8 + rnd() * 6;
@@ -452,7 +430,7 @@ function tick(now) {
 function aimDown() {
   const d = D(); if (d.k === 'track') return;
   if (d.k === 'react') { const now = performance.now(), s = run.ds, ms = T.length ? now - T[0].t0 : 0;
-    if (ms < 100) { s.misses++; T = []; s.at = now + 1200 + rnd() * 2000; snd(140, 0.1, 'sawtooth', 0.04); return; }   // too early: under 100 ms is a guess
+    if (ms < 100) { s.misses++; T = []; s.at = now + 1200 + rnd() * 2000; snd(140, 0.1, 'sawtooth', 0.04); return; }
     FX.push({y: T[0].y, p: T[0].p, r: T[0].r, t0: now}); snd(780, 0.09); return reactHit(now, ms); }
   const now = performance.now(), s = run.ds, t = T.find(t => angTo(t.y, t.p) < t.r);
   if (!t) { s.misses++; run.combo = 0; snd(140, 0.1, 'sawtooth', 0.04); return; }
@@ -461,10 +439,9 @@ function aimDown() {
   if (d.k === 'flick') { T.splice(T.indexOf(t), 1); fill(now); } else spawnMover(now);
 }
 
-// ---------- input wiring ----------
 document.addEventListener('mousemove', e => { if (document.pointerLockElement && mode === 'aim') aimMove(e); });
 document.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement && mode === 'aim') aimDown(); });
-document.addEventListener('keydown', e => {   // Space or Enter presses the main button, so retries are instant
+document.addEventListener('keydown', e => {
   if ((e.code === 'Space' || e.code === 'Enter') && !document.pointerLockElement && e.target.tagName !== 'INPUT') { const b = document.getElementById('go'); if (b) { e.preventDefault(); b.click(); } }
 });
 document.addEventListener('pointerlockchange', () => {
