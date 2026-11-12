@@ -25,6 +25,19 @@ select,input{background:#070b14;color:var(--txt);border:1px solid var(--line);bo
 #perf{position:absolute;right:14px;bottom:10px;font:600 13px Consolas,monospace;color:#8fa3c4;display:none;pointer-events:none;text-shadow:0 1px 3px #000}
 .src{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0 10px}.src th,.src td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:right;white-space:nowrap}.src th:first-child,.src td:first-child{text-align:left;white-space:normal}.card h3{margin:18px 0 4px;font-size:17px}.card a{color:var(--acc2)}
 #hud{position:absolute;top:12px;left:0;right:0;text-align:center;font-size:20px;color:#dfe7f5;display:none;pointer-events:none;text-shadow:0 1px 4px #000;font-weight:600;letter-spacing:.5px}
+.tile[class*=" r-"],.gxcard[class*=" r-"]{position:relative;overflow:hidden;box-shadow:inset 0 1px 0 #ffffff38,inset 0 0 0 1px #ffffff12,0 8px 22px #0009;text-shadow:0 1px 2px #0008}
+.tile[class*=" r-"]::after,.gxcard[class*=" r-"]::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,#ffffff1c 46%,#ffffff08 54%,transparent 70%);pointer-events:none}
+.gxcard{border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin:4px 0 14px}
+.r-red{background:radial-gradient(120% 90% at 15% 0%,#ff3a55 0%,#b0122b 38%,#4d0612 78%,#22030a 100%);border-color:#ff6b80}
+.r-blue{background:radial-gradient(120% 90% at 15% 0%,#4f8dff 0%,#1747c9 38%,#0b1e5c 78%,#050d29 100%);border-color:#7aa6ff}
+.r-yellow{background:radial-gradient(120% 90% at 15% 0%,#ffe066 0%,#e2a400 38%,#7a4f00 78%,#2e1d00 100%);border-color:#ffd84d}
+.r-green{background:radial-gradient(120% 90% at 15% 0%,#3dffb0 0%,#0ea566 38%,#04452a 78%,#011a10 100%);border-color:#4cf2a6}
+.r-purple{background:radial-gradient(120% 90% at 15% 0%,#c58bff 0%,#7a2cf0 38%,#330c6e 78%,#13042b 100%);border-color:#b98cff}
+.r-white{background:radial-gradient(120% 90% at 15% 0%,#ffffff 0%,#eef0f5 38%,#c3c8d4 78%,#9aa1b0 100%);border-color:#ffffff;text-shadow:none}
+.r-black{background:radial-gradient(120% 90% at 15% 0%,#4a4d57 0%,#1d1f25 38%,#0b0c0f 78%,#020203 100%);border-color:#9aa0ad}
+.tile[class*=" r-"] .s{text-shadow:0 0 6px #000a}.tile[class*=" r-"]{color:#ffffffd9}.gxcard[class*=" r-"] .dim{color:#ffffffc0}
+.tile.r-white,.tile.r-white.lock,.tile.r-white b,.gxcard.r-white,.gxcard.r-white .dim,.gxcard.r-white .tag{color:#14161c;text-shadow:none}.tile.r-white .s{color:#a87400}
+.rbadge{display:inline-block;padding:3px 12px;border-radius:999px;font-weight:700;font-size:13px;letter-spacing:.6px;text-transform:uppercase;border:1px solid #ffffff55;margin-right:6px}
 </style></head><body>
 <canvas id="c3"></canvas><canvas id="c"></canvas><div id="hud"></div><div id="perf"></div><div id="ui"></div>
 <script>
@@ -73,7 +86,7 @@ en: {
   why: {slow: x => `${f1(x)} s too slow. Click the moment the ball turns green.`, miss: (m, mx) => `${m} misses; the limit is ${mx}. Slow down a little: accuracy first, speed comes by itself.`,
         on: (g, n) => `${pct(g)} on target; ${pct(n)} needed. Move your hand with the ball, not after it.`, lives: 'They got away. Look at the newest ball, not the last one.', cap: 'Time ran out. Take the closest ball first.'},
   stopWin: 'Five stages today. The best moment to stop is on a win: your hands keep it overnight.',
-  grad: 'ALL STAGES CLEARED', gradSub: 'Rank 1. Replay any stage for three stars, and run Find my sensitivity again on another day to confirm your number.',
+  grad: 'ALL STAGES CLEARED', gradSub: 'Replay any stage for three stars, and run Find my sensitivity again on another day to confirm your number.',
   selT: (i, n) => `Selection ${i} of ${n}`, selB: 'Two weapons, A and B, each a different sensitivity. Play both; the better one survives. You do not need to judge anything.',
   wA: 'Weapon A', wB: 'Weapon B', aDone: 'Weapon A done. Now weapon B.',
   yours: 'YOUR WEAPON', rivals: g => g + ' sensitivity', typeIt: (s, g) => `In ${g}, set your mouse sensitivity to ${s} (both axes, if the game has two). Keep the same mouse and DPI setting.`,
@@ -113,7 +126,7 @@ hu: {
   why: {slow: x => `${f1(x).replace('.', ',')} mp-cel lassabb. Abban a pillanatban kattints, amikor a golyó zöldre vált.`, miss: (m, mx) => `${m} hiba; a határ ${mx}. Lassíts egy kicsit: előbb a pontosság, a gyorsaság magától jön.`,
         on: (g, n) => `${pct(g)} a célon; ${pct(n)} kellett. A golyóval együtt mozdítsd a kezed, ne utána.`, lives: 'Elszöktek. A legújabb golyót nézd, ne az előzőt.', cap: 'Lejárt az idő. Mindig a legközelebbi golyót vedd először.'},
   stopWin: 'Ma már öt szint megvan. A legjobb győzelemmel abbahagyni: a kezed éjjel megjegyzi.',
-  grad: 'MINDEN SZINT TELJESÍTVE', gradSub: 'Első hely. Bármelyik szintet újrajátszhatod a három csillagért, és egy másik napon futtasd újra az érzékenységkeresést, hogy megerősítsd a számodat.',
+  grad: 'MINDEN SZINT TELJESÍTVE', gradSub: 'Bármelyik szintet újrajátszhatod a három csillagért, és egy másik napon futtasd újra az érzékenységkeresést, hogy megerősítsd a számodat.',
   selT: (i, n) => `Válogatás: ${i}/${n}`, selB: 'Két fegyver, A és B, mindkettő más érzékenységgel. Játszd végig mindkettőt; a jobbik marad. Semmit nem kell megítélned.',
   wA: 'A fegyver', wB: 'B fegyver', aDone: 'Az A fegyver kész. Most jön a B.',
   yours: 'A TE FEGYVERED', rivals: g => g + '-érzékenység', typeIt: (s, g) => `A ${g} játékban állítsd az egérérzékenységet ${s} értékre (mindkét tengelyen, ha kettő van). Maradj ugyanannál az egérnél és DPI-beállításnál.`,
@@ -268,10 +281,10 @@ function rankPop(P) { const t = tierOf(P), was = P.seenT != null ? P.seenT : CAL
 function map() {
   const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
   const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
-    return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
+    return `<div class="tile r-${RCOL[BASE_ROUTE[i]]}${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
   rankPop(P); show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank" id="sanct">${POS ? L.rank(POS) : ''}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
-  <div class="grid">${tiles}</div>
-  <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
+  <div class="grid">${tiles}</div>${P.cleared >= STAGES.length ? `<h2 style="margin-top:18px;font-size:20px">${G().top}</h2><div class="grid">${genTiles(P)}</div>` : ""}
+  ${P.cleared >= STAGES.length ? `<button id="go" onclick="genIntro()">${G().btn(gxOf(P).n + 1)}</button>` : `<button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>`}<button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
 function goalText(i) {
   const s = STAGES[i], e = ease(i), d = s.d.map(x => scaled(x, e));
@@ -314,7 +327,7 @@ function judgeStage(i, res, why) {
   show(`<div class="tag">${L.stage(i + 1)} - ${L.names[i]}</div><div class="clear">${grad ? L.grad : L.cleared}</div>
   <div class="stars">${'★'.repeat(stars)}<i>${'★'.repeat(3 - stars)}</i></div>
   ${t0 >= 0 && tierOf(P) !== t0 ? `<div class="rank" style="font-size:26px">${L.tier(L.tierUp(L.tiers[t0], L.tiers[tierOf(P)]))}</div>` : t0 < 0 ? tierHtml(P) : ''}
-  ${grad ? `${tierHtml(P)}<p>${L.gradSub}</p>` : i + 1 < STAGES.length ? `<div class="hype">${L.hype[i + 1]}</div>` : ''}
+  ${grad ? `${tierHtml(P)}<p>${L.gradSub}</p><div class="hype">${G().ask}</div><button id="go" onclick="genIntro()">${G().yes}</button>` : i + 1 < STAGES.length ? `<div class="hype">${L.hype[i + 1]}</div>` : ''}
   ${P.today === 5 ? `<p class="dim">${L.stopWin}</p>` : ''}
   ${i + 1 < STAGES.length ? `<button id="go" onclick="stageIntro(${i + 1})">${L.next}</button><button class="alt" onclick="playStage(${i})">${L.retry}</button>` : ''}<button ${i + 1 < STAGES.length ? 'class="alt"' : 'id="go"'} onclick="map()">${L.map}</button>`);
 }
@@ -894,6 +907,131 @@ function selRound() {
 function selPlay() { play(AF, L.af.t(SS.i + 1), SS.center, (Math.random() * 1e9) | 0, () => { afUpdate(run.rec); SS.i++; snd(880, 0.15); selRound(); }); }
 TX.en.af = {t: i => `Calibration round ${i}`, b: 'Hit 10 targets. Each round measures how far your hand carries on its first push and moves the sensitivity a little, until it stops changing: usually 5 to 8 rounds, 3 to 4 minutes. Do not think about it, just hit the targets.'};
 TX.hu.af = {t: i => `${i}. kalibráló kör`, b: 'Találj el 10 célt. Minden kör megméri, meddig visz el a kezed első lendülete, és kicsit állít az érzékenységen, amíg már nem változik: általában 5-8 kör, 3-4 perc. Ne gondolkodj rajta, csak találd el a célokat.'};
+
+// ---------- Endless Ascent: after stage 13, each new stage is generated from the player's own numbers ----------
+// Seven routes, one colour each. The weakest route is picked from the Rank Trials parts and the motion of recent plays,
+// difficulty per route follows a staircase (+0.25 on a clear, -0.6 on a fail: settles near 70% clears), and the target
+// is always the next rank, one rank at a time.
+const ROUTES = ['speed', 'precision', 'timing', 'tracking', 'reaction', 'switching', 'mixed'];
+const RCOL = {speed: 'red', precision: 'white', timing: 'purple', tracking: 'blue', reaction: 'yellow', switching: 'green', mixed: 'black'};
+const BASE_ROUTE = ['speed', 'tracking', 'reaction', 'speed', 'tracking', 'reaction', 'precision', 'mixed', 'timing', 'switching', 'reaction', 'tracking', 'mixed'];
+const GX = {
+  en: {btn: n => `Endless Ascent: stage ${n}`, head: 'A new stage unlocked based on your new statistics', ask: 'Do you wish to improve?', yes: 'Yes, play it', later: 'Not now',
+    route: {speed: 'Speed', precision: 'Precision', timing: 'Timing', tracking: 'Tracking', reaction: 'Reaction', switching: 'Switching', mixed: 'All-round'},
+    rwhy: {speed: 'your flicks are your slowest part against the next rank', precision: 'your first push lands off target too often', timing: 'you hover on targets too long before clicking',
+      tracking: 'your tracking is your weakest part against the next rank', reaction: 'your reaction is your weakest part against the next rank', switching: 'a change of pace: fast target switching', mixed: 'a blend of your two weakest parts'},
+    next: t => `Next rank: ${t}`, top: 'Endless Ascent', need: 'Take the Rank Trials first, so the stages can be built from your real numbers.', rt: 'Rank Trials',
+    stats: s => [s.tph && `${s.tph.toFixed(2)} s per target`, s.acc != null && `${Math.round(s.acc * 100)}% hits`, s.os && `first push ${s.os >= 1 ? '+' : ''}${Math.round((s.os - 1) * 100)}%`, s.dw && `${Math.round(s.dw)} ms on target before the click`, s.on != null && `${Math.round(s.on * 100)}% tracking`].filter(Boolean).join(' &middot; '),
+    last: 'Your last play', lvl: l => `Difficulty ${l.toFixed(1)}`, cleared: 'STAGE CLEAR', notYet: 'NOT YET', again: 'Try again (eased)', nextBtn: 'Next stage', map: 'Stage map',
+    check: t => `Five stages cleared since your last Rank Trials. Your numbers have moved: prove ${t} in the Rank Trials.`,
+    dPeek: d => `Targets pop out of ${d.doors} doorways: hit ${d.n}. Each stays ${f1(d.life)} s; ${d.lives} escaped ends the stage.`,
+    dSwitch: d => `Hold fire on ${d.n} moving targets until each one breaks.`,
+    done: n => `${n} endless stage${n === 1 ? '' : 's'} cleared`},
+  hu: {btn: n => `Végtelen emelkedés: ${n}. szint`, head: 'Új szint nyílt meg az új statisztikáid alapján', ask: 'Szeretnél fejlődni?', yes: 'Igen, játszom', later: 'Most nem',
+    route: {speed: 'Gyorsaság', precision: 'Pontosság', timing: 'Időzítés', tracking: 'Követés', reaction: 'Reakció', switching: 'Váltás', mixed: 'Sokoldalú'},
+    rwhy: {speed: 'a célravetésed a leglassabb részed a következő ranghoz képest', precision: 'az első mozdulatod túl gyakran a célon kívül áll meg', timing: 'túl sokáig maradsz a célon kattintás előtt',
+      tracking: 'a követésed a leggyengébb részed a következő ranghoz képest', reaction: 'a reakciód a leggyengébb részed a következő ranghoz képest', switching: 'tempóváltás: gyors célváltás', mixed: 'a két leggyengébb részed keveréke'},
+    next: t => `Következő rang: ${t}`, top: 'Végtelen emelkedés', need: 'Előbb csináld meg a Rangtesztet, hogy a szinteket a valódi számaidból építsük.', rt: 'Rangteszt',
+    stats: s => [s.tph && `${s.tph.toFixed(2).replace('.', ',')} mp célonként`, s.acc != null && `${Math.round(s.acc * 100)}% találat`, s.os && `első mozdulat ${s.os >= 1 ? '+' : ''}${Math.round((s.os - 1) * 100)}%`, s.dw && `${Math.round(s.dw)} ms a célon kattintás előtt`, s.on != null && `${Math.round(s.on * 100)}% követés`].filter(Boolean).join(' &middot; '),
+    last: 'Az utolsó játékod', lvl: l => `Nehézség ${l.toFixed(1).replace('.', ',')}`, cleared: 'SZINT TELJESÍTVE', notYet: 'MÉG NEM', again: 'Újra (könnyítve)', nextBtn: 'Következő szint', map: 'Szintek',
+    check: t => `Öt szintet teljesítettél a legutóbbi Rangteszt óta. A számaid elmozdultak: bizonyítsd a(z) ${t} rangot a Rangtesztben.`,
+    dPeek: d => `A célok ${d.doors} ajtóból bukkannak elő: találj el ${d.n}-t. Mindegyik ${f1(d.life).replace('.', ',')} mp-ig marad; ha ${d.lives} elszökik, vége.`,
+    dSwitch: d => `Tartsd a tüzet ${d.n} mozgó célon, amíg mindegyik szét nem törik.`,
+    done: n => `${n} végtelen szint teljesítve`}};
+const G = () => GX[LANG] || GX.en;
+const gxOf = P => { P.gx = P.gx || {n: 0, lv: {}, h: [], since: 0}; return P.gx; };
+
+function genStats(res, rec) {
+  const clk = res.filter(r => r && r.k !== 'track' && r.n), hits = clk.reduce((a, r) => a + r.n, 0), miss = clk.reduce((a, r) => a + r.misses, 0), tr = res.find(r => r && r.k === 'track');
+  const sp = clk.filter(r => r.k === 'flick' || r.k === 'move'), sh = sp.reduce((a, r) => a + r.n, 0);
+  const s = {tph: sh ? sp.reduce((a, r) => a + r.time, 0) / sh : 0, acc: hits ? hits / (hits + miss) : null, on: tr ? tr.on : null, os: 0, dw: 0};
+  if (rec && rec.length) {
+    const fp = firstPush(rec).sort((a, b) => a - b); if (fp.length >= 3) s.os = fp[fp.length >> 1];
+    const n = rec.length / 9, at = (i, k) => rec[i * 9 + k], wd = a => ((a + 540) % 360) - 180, dw = []; let inT = -1;
+    for (let i = 0; i < n; i++) {
+      const on = isFinite(at(i, 3)) && Math.hypot(wd(at(i, 3) - at(i, 1)), at(i, 4) - at(i, 2)) <= at(i, 5);
+      if (at(i, 8) & 2) { if (inT >= 0) dw.push(at(i, 0) - inT); inT = -1; } else if (on && inT < 0) inT = at(i, 0); else if (!on) inT = -1;
+    }
+    dw.sort((a, b) => a - b); if (dw.length >= 3) s.dw = dw[dw.length >> 1];
+  }
+  for (const k in s) if (typeof s[k] === 'number') s[k] = +s[k].toFixed(3);
+  return s;
+}
+
+function pickRoute(P) {
+  const g = gxOf(P), b = bestRk(P), v2 = b.v === 2;
+  const parts = {reaction: zOf(RK_RT, Math.max(80, Math.min(2000, b.rt)), RK_RTZ), speed: zOf(v2 ? RK_FL : RK_FL1, Math.max(0.15, Math.min(10, b.fl))), tracking: zOf(v2 ? RK_ON : RK_ON1, Math.max(0, Math.min(1, b.on)))};
+  const order = Object.keys(parts).sort((x, y) => parts[x] - parts[y]), recent = g.h.slice(-3), last = g.h.map(x => x.f);
+  const os = recent.filter(x => x.os).map(x => x.os), dw = recent.filter(x => x.dw).map(x => x.dw), acc = recent.filter(x => x.acc != null).map(x => x.acc);
+  const avg = a => a.reduce((s, x) => s + x, 0) / a.length;
+  let r = order[0];
+  if ((os.length && Math.abs(avg(os) - 0.95) > 0.12) || (acc.length && avg(acc) < 0.82)) r = 'precision';
+  else if (dw.length && avg(dw) > 230) r = 'timing';
+  if ((g.n + 1) % 4 === 0) r = 'mixed';
+  else if ((g.n + 1) % 7 === 0) r = 'switching';
+  if (last.length >= 2 && last.slice(-2).every(x => x === r)) r = order.find(x => x !== r) || 'mixed';
+  return {r, two: order.slice(0, 2)};
+}
+
+const lvOf = (P, r) => { const g = gxOf(P); if (g.lv[r] == null) g.lv[r] = Math.min(8, Math.max(0, tierOf(P) + 1)); return g.lv[r]; };
+function drillFor(r, l) {
+  const q = (a, f, lo) => Math.max(lo, a * Math.pow(f, l)), N = Math.round(l);
+  if (r === 'speed') { const d = {k: 'flick', n: 12 + N, r: +q(2.4, 0.93, 1.2).toFixed(2), at: l >= 4 ? 2 : 1}; d.need = {t: +(d.n * q(1.45, 0.91, 0.55)).toFixed(1)}; return d; }
+  if (r === 'precision') { const d = {k: 'flick', n: 10, r: +q(1.9, 0.9, 0.75).toFixed(2), near: 20, far: 60}; d.need = {miss: Math.max(1, 4 - Math.floor(l / 2)), t: +(d.n * q(2.2, 0.93, 0.9)).toFixed(1)}; return d; }
+  if (r === 'timing') return {k: 'flick', n: 12 + N, r: +q(2.2, 0.94, 1.1).toFixed(2), life: +q(1.9, 0.9, 0.65).toFixed(2), lives: 3, need: {}};
+  if (r === 'tracking') return {k: 'track', s: 10, r: +q(2.6, 0.92, 1.2).toFixed(2), v: +(0.9 + 0.1 * l).toFixed(2), need: {on: +Math.min(0.55, 0.35 + 0.02 * l).toFixed(2)}};
+  if (r === 'reaction') return {k: 'peek', n: 8 + N, r: +q(2.4, 0.94, 1.2).toFixed(2), life: +q(1.6, 0.9, 0.55).toFixed(2), lives: 3, cue: 0, doors: Math.min(6, 4 + Math.floor(l / 3)), need: {}};
+  if (r === 'switching') { const d = {k: 'switch', n: 4 + Math.floor(l / 2), hp: 0.6, v: +(0.5 + 0.08 * l).toFixed(2), r: +q(2.8, 0.93, 1.3).toFixed(2)}; d.need = {t: +(d.n * q(3, 0.92, 1.4)).toFixed(1)}; return d; }
+}
+function genStage(P, force) {
+  const pk = force || pickRoute(P), r = pk.r, two = pk.two, g = gxOf(P);
+  let d;
+  if (r === 'mixed') d = two.map(x => drillFor(x, Math.max(0, lvOf(P, x) - 0.5))).map(x => Object.assign(x, x.k === 'flick' && !x.life ? {n: Math.ceil(x.n / 2), need: x.need.t ? {t: +(x.need.t / 2).toFixed(1)} : x.need} : x.k === 'track' ? {s: 6} : x.k === 'peek' ? {n: Math.ceil(x.n / 2)} : {}));
+  else d = [drillFor(r, lvOf(P, r))];
+  g.cur = {r, d, lv: r === 'mixed' ? 0 : lvOf(P, r), two};
+  return g.cur;
+}
+const gDesc = x => x.k === 'flick' ? L.dFlick(x) : x.k === 'track' ? L.dTrack(x) : x.k === 'move' ? L.dMove(x) : x.k === 'peek' ? G().dPeek(x) : G().dSwitch(x);
+const nextTier = P => L.tiers[Math.min(6, Math.max(0, tierOf(P) + 1))];
+const routeBadge = r => `<span class="rbadge r-${RCOL[r]}">${G().route[r]}</span>`;
+
+function genIntro() {
+  const P = me(), g = gxOf(P);
+  if (!bestRk(P)) return show(`<div class="tag">${G().top}</div><p>${G().need}</p><button id="go" onclick="CT='';rankTest()">${G().rt}</button><button class="alt" onclick="map()">${G().map}</button>`);
+  const c = g.cur || genStage(P); save();
+  const last = g.h[g.h.length - 1];
+  show(`<div class="gxcard r-${RCOL[c.r]}"><div class="tag">${G().top} &middot; ${L.stage(g.n + 1)}</div><h2>${G().head}</h2>
+  <div>${routeBadge(c.r)} <span class="dim">${G().rwhy[c.r]}</span></div>
+  ${last ? `<p class="dim">${G().last}: ${G().stats(last)}</p>` : ''}
+  <p>${c.d.map(x => gDesc(x) + (Object.keys(x.need || {}).length ? ' ' + L.pass(x.need) : '')).join(' ')}</p>
+  <p class="dim">${G().next(nextTier(P))}${c.lv ? ' &middot; ' + G().lvl(c.lv) : ''}</p></div>
+  <div class="hype">${G().ask}</div>
+  <button id="go" onclick="genPlay()">${G().yes}</button><button class="alt" onclick="map()">${G().later}</button>`);
+}
+function genPlay() { const c = gxOf(me()).cur; play(c.d.map(x => Object.assign({}, x)), G().top + ' - ' + G().route[c.r], me().sens, Date.now(), (res, why) => genDone(res, why)); }
+function genDone(res, why) {
+  const P = me(), g = gxOf(P), c = g.cur, st = genStats(res, run && run.rec);
+  if (!why) c.d.forEach((x, i) => { const r = res[i], n = x.need || {}; if (!r) return;
+    if (!why && n.t && r.time > n.t) why = L.why.slow(r.time - n.t);
+    if (!why && n.miss != null && r.misses > n.miss) why = L.why.miss(r.misses, n.miss);
+    if (!why && n.on && r.on < n.on) why = L.why.on(r.on, n.on); });
+  const ok = !why, rs = c.r === 'mixed' ? c.two : [c.r];
+  rs.forEach(r => { g.lv[r] = Math.min(8, Math.max(0, lvOf(P, r) + (ok ? 0.25 : -0.6))); });
+  g.h = g.h.concat([Object.assign({f: c.r, ok: ok ? 1 : 0}, st)]).slice(-12);
+  if (ok) { g.n++; g.since = (g.since || 0) + 1; g.cur = null; } else genStage(P, {r: c.r, two: c.two});
+  save(); tune(ok ? [523, 659, 784, 1047] : [392, 330, 262], ok ? 110 : 130, ok ? 0.3 : 0.22);
+  const chk = ok && g.since >= 5 && tierOf(P) < 6;
+  if (chk) g.since = 0;
+  show(`<div class="gxcard r-${RCOL[c.r]}"><div class="tag">${G().top} &middot; ${routeBadge(c.r)}</div><div class="${ok ? 'clear' : 'fail'}">${ok ? G().cleared : G().notYet}</div>
+  ${why ? `<p>${why}</p>` : ''}<p class="dim">${G().stats(st)}</p><p class="dim">${G().done(g.n)} &middot; ${G().next(nextTier(P))}</p></div>
+  ${chk ? `<div class="hype">${G().check(nextTier(P))}</div><button id="go" onclick="CT='';rankTest()">${G().rt}</button><button class="alt" onclick="genIntro()">${G().nextBtn}</button>`
+        : `<button id="go" onclick="genIntro()">${ok ? G().nextBtn : G().again}</button>`}<button class="alt" onclick="map()">${G().map}</button>`);
+}
+function genTiles(P) {
+  const g = gxOf(P);
+  return g.h.slice(-9).map((x, i, a) => `<div class="tile r-${RCOL[x.f]}">${G().route[x.f]}<b>${x.ok ? '&#10003;' : '&#10007;'} ${G().stats({tph: x.tph, acc: x.acc}).split(' &middot; ')[0] || G().stats({on: x.on})}</b></div>`).join('') +
+    `<div class="tile next r-${RCOL[(g.cur || {}).r || 'mixed']}" onclick="genIntro()">${G().btn(g.n + 1)}<b>${G().ask}</b></div>`;
+}
 
 if (location.hash === '#sources') sources(); else intro();
 </script></body></html>
