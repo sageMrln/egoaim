@@ -157,7 +157,8 @@ const Phi = z => { const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * 
 function rkScore(r) { const z = 0.2 * zOf(RK_RT, Math.max(80, Math.min(2000, r.rt)), RK_RTZ) + 0.4 * zOf(RK_FL, Math.max(0.15, Math.min(10, r.fl))) + 0.4 * zOf(RK_ON, Math.max(0, Math.min(1, r.on)));
   let t = 0; RK_Z.forEach((x, j) => { if (z >= x) t = j + 1; }); return {z, t, top: 1 - Phi(z)}; }
 const topTxt = p => { p = Math.max(1e-4, p); const x = String(p < 0.01 ? (p * 100).toFixed(2) : p < 0.1 ? (p * 100).toFixed(1) : Math.round(p * 100)); return (LANG === 'hu' ? x.replace('.', ',') : x) + '%'; };
-function tierOf(P) { return P.rk ? rkScore(P.rk).t : -1; }
+const KEPT = {mrln: 4, adith: 4};
+function tierOf(P) { const k = KEPT[(NAME || '').toLowerCase()]; return Math.max(P.rk ? rkScore(P.rk).t : -1, k != null ? k : -1); }
 function rankTest() { play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6}, {k: 'track', s: 12, r: 1.8, v: 1.3}], L.rt, me().sens, Date.now(), judgeRank); }
 function judgeRank(res, why) {
   if (why) return show(`<div class="tag">${L.rt}</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
