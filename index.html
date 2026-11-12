@@ -64,7 +64,7 @@ en: {
   find: 'Find my sensitivity (4 min)', have: 'I have my sensitivity: log in', cont: 'Continue',
   names: ['First Shot', 'Lock On', 'On the Move', 'Quick Shot', 'Tracking', 'Chase', 'Precision', 'Full Mix', 'Under Pressure', 'Swarm', 'Counter Strafe', 'Fast Tracking', 'Final Test'],
   hype: ['Start simple: click each target.', 'Keep your crosshair on it.', 'Hit them while you both move.', 'Same flicks, now against the clock.', 'Smoother tracking, smaller target.', 'Moving targets, against the clock.', 'Smaller targets: precision first.', 'Flick, move and track in one run.', 'Targets escape: take the closest first.', 'Three at once. Take them one at a time.', 'Faster movers. Stay calm.', 'Fast target: stay on it.', 'The last stage.'],
-  stage: i => 'Stage ' + i, rank: r => 'Aim Sanctum #' + r, go: 'GO', next: 'Next stage', retry: 'Try again', map: 'Stage map',
+  stage: i => 'Stage ' + i, rank: t => 'Aim Sanctum: ' + (t < 0 ? 'Unranked' : L.tiers[t] + ' Level'), go: 'GO', next: 'Next stage', retry: 'Try again', map: 'Stage map',
   dFlick: d => `Hit ${d.n} targets` + (d.at > 1 ? `, ${d.at} at once` : '') + (d.life ? `. Each one vanishes after ${f1(d.life)} s; ${d.lives} lost ends the stage` : '') + (d.s ? `. Time limit ${Math.round(d.s)} s` : '') + '.',
   dMove: d => `Hit ${d.n} moving targets while you strafe.`, dTrack: d => `Keep the crosshair on the ball for ${d.s} s.`,
   pass: p => 'To pass: ' + ([p.t && `under ${f1(p.t)} s`, p.miss != null && `at most ${p.miss} misses`, p.on && `at least ${pct(p.on)} on target`].filter(Boolean).join(', ') || 'just finish it') + '.',
@@ -104,7 +104,7 @@ hu: {
   find: 'Érzékenységem megkeresése (4 perc)', have: 'Megvan az érzékenységem: belépés', cont: 'Folytatás',
   names: ['Első lövés', 'Célra tartás', 'Mozgásban', 'Gyors lövés', 'Követés', 'Üldözés', 'Pontosság', 'Vegyes', 'Nyomás alatt', 'Raj', 'Ellenmozgás', 'Gyors követés', 'Utolsó próba'],
   hype: ['Kezdjük egyszerűen: kattints minden célra.', 'Tartsd rajta a célkeresztet.', 'Találd el, miközben mindketten mozogtok.', 'Ugyanaz, most az óra ellen.', 'Simább követés, kisebb cél.', 'Mozgó célok, az óra ellen.', 'Kisebb célok: előbb a pontosság.', 'Célravetés, mozgás és követés egy menetben.', 'A célok elszöknek: a legközelebbit előbb.', 'Három egyszerre. Egyenként vedd le őket.', 'Gyorsabb célok. Maradj nyugodt.', 'Gyors cél: maradj rajta.', 'Az utolsó szint.'],
-  stage: i => i + '. szint', rank: r => 'Célzószentély #' + r, go: 'RAJTA', next: 'Következő szint', retry: 'Újra', map: 'Szintek',
+  stage: i => i + '. szint', rank: t => 'Célzószentély: ' + (t < 0 ? 'nincs még rang' : L.tiers[t] + ' szint'), go: 'RAJTA', next: 'Következő szint', retry: 'Újra', map: 'Szintek',
   dFlick: d => `Találj el ${d.n} célpontot` + (d.at > 1 ? `, egyszerre ${d.at} van kint` : '') + (d.life ? `. Mindegyik ${f1(d.life).replace('.', ',')} mp után eltűnik; ha ${d.lives} elszökik, vége a szintnek` : '') + (d.s ? `. Időkorlát: ${Math.round(d.s)} mp` : '') + '.',
   dMove: d => `Találj el ${d.n} mozgó célpontot, miközben oldalazol.`, dTrack: d => `Tartsd a célkeresztet a golyón ${d.s} másodpercig.`,
   pass: p => 'A teljesítéshez: ' + ([p.t && `${f1(p.t).replace('.', ',')} mp alatt`, p.miss != null && `legfeljebb ${p.miss} hibával`, p.on && `legalább ${pct(p.on)} a célon`].filter(Boolean).join(', ') || 'csak érj a végére') + '.',
@@ -261,7 +261,7 @@ function map() {
   const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
   const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
-  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(rankOf(P.cleared))}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
+  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(tierOf(P))}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
   <div class="grid">${tiles}</div>
   <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
@@ -274,7 +274,7 @@ function need(i) { const p = STAGES[i].pass, e = ease(i), o = {};
   if (p.t) o.t = p.t * e; if (p.miss != null) o.miss = Math.ceil(p.miss * e); if (p.on) o.on = p.on / e; return o; }
 function stageIntro(i) {
   const e = ease(i);
-  show(`<div class="tag">${L.stage(i + 1)} &nbsp; ${L.rank(rankOf(me().cleared))}</div><h2>${L.names[i]}</h2><div class="hype">${L.hype[i]}</div>
+  show(`<div class="tag">${L.stage(i + 1)} &nbsp; ${L.rank(tierOf(me()))}</div><h2>${L.names[i]}</h2><div class="hype">${L.hype[i]}</div>
   <p>${goalText(i)}</p>${e > 1 ? `<p class="dim">${L.eased(e)}</p>` : ''}
   <button id="go" onclick="playStage(${i})">${L.go}</button><button class="alt" onclick="map()">${L.map}</button>`);
 }
@@ -305,7 +305,7 @@ function judgeStage(i, res, why) {
   const grad = first && i === STAGES.length - 1;
   show(`<div class="tag">${L.stage(i + 1)} - ${L.names[i]}</div><div class="clear">${grad ? L.grad : L.cleared}</div>
   <div class="stars">${'★'.repeat(stars)}<i>${'★'.repeat(3 - stars)}</i></div>
-  ${first ? `<div class="rank">${L.rank(before)} &rarr; ${L.rank(rankOf(P.cleared))}</div>` : ''}${t0 >= 0 && tierOf(P) !== t0 ? `<div class="rank" style="font-size:26px">${L.tier(L.tierUp(L.tiers[t0], L.tiers[tierOf(P)]))}</div>` : t0 < 0 ? tierHtml(P) : ''}
+  ${t0 >= 0 && tierOf(P) !== t0 ? `<div class="rank" style="font-size:26px">${L.tier(L.tierUp(L.tiers[t0], L.tiers[tierOf(P)]))}</div>` : t0 < 0 ? tierHtml(P) : ''}
   ${grad ? `${tierHtml(P)}<p>${L.gradSub}</p>` : i + 1 < STAGES.length ? `<div class="hype">${L.hype[i + 1]}</div>` : ''}
   ${P.today === 5 ? `<p class="dim">${L.stopWin}</p>` : ''}
   ${i + 1 < STAGES.length ? `<button id="go" onclick="stageIntro(${i + 1})">${L.next}</button><button class="alt" onclick="playStage(${i})">${L.retry}</button>` : ''}<button ${i + 1 < STAGES.length ? 'class="alt"' : 'id="go"'} onclick="map()">${L.map}</button>`);
