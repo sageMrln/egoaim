@@ -156,11 +156,11 @@ function rankTest() { play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6
 function judgeRank(res, why) {
   if (why) return show(`<div class="tag">${L.rt}</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
   const a = res[0].rts.slice().sort((x, y) => x - y), r = {rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3)};
-  const P = me(), sc = rkScore(r); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
+  const P = me(), sc = rkScore(r); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
   const b = rkScore(P.rk);
   show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p>
   ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
-  <button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
+  ${CT ? `<button id="go" onclick="CT='';course()">${L.co.back}</button><button class="alt" onclick="rankTest()">${L.retry}</button>` : `<button id="go" onclick="rankTest()">${L.retry}</button>`}<button class="alt" onclick="CT='';map()">${L.map}</button>`);
 }
 const ptsOf = P => Object.keys(P.first).reduce((a, i) => a + Math.max(0, 10 * (P.stars[i] || 0) - 3 * (P.first[i] - 1)), 0);
 const starsOf = P => Object.values(P.stars).reduce((a, x) => a + x, 0);
@@ -243,7 +243,7 @@ function map() {
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
   show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(rankOf(P.cleared))}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>
   <div class="grid">${tiles}</div>
-  <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
+  <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
 function goalText(i) {
   const s = STAGES[i], e = ease(i), d = s.d.map(x => scaled(x, e));
@@ -324,6 +324,7 @@ function reveal() {
 }
 function cm360() { const d = +document.getElementById('dpi').value; document.getElementById('cmo').textContent = d >= 100 ? f1(914.4 / (d * me().sens * YAW)) + L.cm : ''; }
 
+let FIRE = false, VEL = [0, 0]; const KEYS = {};
 let mode = '', cam = {y: 0, p: 0}, dpc = 0, T = [], FX = [], run = null, raf = 0, last = 0, cd0 = 0, cdk = 0, PL = [0, 0];
 const R = d => d * Math.PI / 180;
 function resize() { cv.width = innerWidth; cv.height = innerHeight; }
@@ -343,18 +344,22 @@ function draw(now) {
     for (let p = -60; p <= 60; p += 5) { const s = proj(y, R(p)); if (s) { on ? g.lineTo(s[0], s[1]) : g.moveTo(s[0], s[1]); on = true; } else on = false; } g.stroke(); }
   for (let p = -60; p <= 60; p += 10) { g.strokeStyle = p === 0 ? '#24406e' : '#14203a'; g.beginPath(); let on = false;
     for (let d = -100; d <= 100; d += 4) { const s = proj(cam.y + R(d), R(p)); if (s) { on ? g.lineTo(s[0], s[1]) : g.moveTo(s[0], s[1]); on = true; } else on = false; } g.stroke(); }
-  for (const t of T) { const s = proj(t.y, t.p); if (!s) continue; const r = Math.max(3, s[2] * Math.tan(t.r)), on = angTo(t.y, t.p) < t.r;
-    g.fillStyle = on ? '#36d07a' : '#ff4d5e'; g.beginPath(); g.arc(s[0], s[1], r, 0, 7); g.fill(); g.strokeStyle = '#ffffff44'; g.stroke();
-    if (t.life) { g.strokeStyle = '#00d8ff'; g.lineWidth = 3; g.beginPath(); g.arc(s[0], s[1], r + 6, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.max(0, 1 - (now - t.t0) / t.life)); g.stroke(); g.lineWidth = 1; } }
+  const xd = run && mode === 'aim' && run.drills[run.di], xk = xd && XK[xd.k]; if (xk && xk.draw) xk.draw(now, xd);
+  for (const t of T) { if (t.hide) continue; const s = proj(t.y, t.p); if (!s) continue; const r = Math.max(3, s[2] * Math.tan(t.r)), on = angTo(t.y, t.p) < t.r;
+    g.fillStyle = t.wait ? '#5a6478' : on ? '#36d07a' : '#ff4d5e'; g.beginPath(); g.arc(s[0], s[1], r, 0, 7); g.fill(); g.strokeStyle = '#ffffff44'; g.stroke();
+    if (t.life) { g.strokeStyle = '#00d8ff'; g.lineWidth = 3; g.beginPath(); g.arc(s[0], s[1], r + 6, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.max(0, 1 - (now - t.t0) / t.life)); g.stroke(); g.lineWidth = 1; }
+    if (t.max) { g.strokeStyle = '#ffc83d'; g.lineWidth = 4; g.beginPath(); g.arc(s[0], s[1], r + 7, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * t.hp / t.max); g.stroke(); g.lineWidth = 1; } }
   FX = FX.filter(f => now - f.t0 < 260);
   for (const f of FX) { const s = proj(f.y, f.p); if (!s) continue; const a = (now - f.t0) / 260;
     g.strokeStyle = `rgba(0,216,255,${1 - a})`; g.lineWidth = 3; g.beginPath(); g.arc(s[0], s[1], s[2] * Math.tan(f.r) + 30 * a, 0, 7); g.stroke(); g.lineWidth = 1; }
   const cx = cv.width / 2, cy = cv.height / 2; g.fillStyle = '#fff'; g.fillRect(cx - 1, cy - 9, 2, 6); g.fillRect(cx - 1, cy + 3, 2, 6); g.fillRect(cx - 9, cy - 1, 6, 2); g.fillRect(cx + 3, cy - 1, 6, 2);
+  if (xk && xk.walk) xOver(now, xd);
+  if (run && run.flash && now - run.flash.t0 < 650) { g.fillStyle = run.flash.c; g.font = '800 22px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(run.flash.s, cx, cy + 42); }
 }
 function bigText(t) { g.fillStyle = '#00d8ff'; g.font = '900 140px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, cv.width / 2, cv.height / 2 - 120); }
 
 async function play(drills, label, sens, sd, done) {
-  dpc = R(sens * YAW); cam = {y: 0, p: 0}; seed(sd); T = []; FX = [];
+  dpc = R(sens * YAW); cam = {y: 0, p: 0}; seed(sd); T = []; FX = []; PL = [0, 0]; VEL = [0, 0];
   run = {drills, label, sens, sd, done, di: 0, res: [], combo: 0};
   ui.style.display = 'none'; cv.style.display = 'block'; hud.style.display = 'block'; hud.textContent = label; resize();
   await lock(); mode = 'count'; cd0 = last = performance.now(); cdk = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
@@ -365,6 +370,7 @@ function startDrill(now) {
   if (d.k === 'flick') fill(now);
   else if (d.k === 'react') { run.ds.rts = []; run.ds.at = now + 1200 + rnd() * 2000; }
   else if (d.k === 'move') { PL = [0, 0]; run.pv = 4; spawnMover(now); }
+  else if (XK[d.k]) XK[d.k].start(now, d);
   else T = [{y: cam.y + R(8), p: 0, r: R(d.r), v: R(45) * d.v}];
 }
 function fill(now) { const d = D(); while (T.length < (d.at || 1) && run.ds.hits + T.length < d.n) spawnFlick(now); }
@@ -380,12 +386,12 @@ function spawnMover(now) { const side = rnd() < .5 ? -1 : 1, a = cam.y + side * 
 function aimMove(e) { cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); }
 function finishDrill(now) {
   const d = D(), s = run.ds, el = (now - s.t0) / 1000;
-  run.res.push({k: d.k, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0, rts: s.rts || null});
+  run.res.push({k: d.k, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0, rts: s.rts || null, x: s.x || null});
   run.di++; if (run.di >= run.drills.length) return endPlay(null);
   startDrill(now);
 }
 function reactHit(now, ms) { const s = run.ds; s.rts.push(ms); s.hits++; T = []; s.at = now + 1200 + rnd() * 2000; if (s.hits >= D().n) finishDrill(now); }
-function endPlay(why) { mode = ''; T = []; cancelAnimationFrame(raf); unlock(); run.done(run.res, why); }
+function endPlay(why) { mode = ''; T = []; FIRE = false; cancelAnimationFrame(raf); unlock(); run.done(run.res, why); }
 function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (mode === 'count') {
@@ -415,11 +421,14 @@ function tick(now) {
     t.x += t.v * dt * t.ux; t.z += t.v * dt * t.uz; placeMover(t);
     if (now - t.t0 > 5000) { s.misses += 2; spawnMover(now); }
     h += L.hudHits(s.hits, d.n) + '   ' + f1(el + 0.25 * s.misses) + ' s';
+  } else if (XK[d.k]) {
+    const r = XK[d.k].tick(now, dt, d, s, el); if (mode !== 'aim' || r == null) return; h += r;
   } else {
     const t = T[0];
-    if (Math.random() < dt * 0.9) t.v = -Math.sign(t.v) * R(30 + Math.random() * 45) * d.v;
+    if (Math.random() < dt * (d.rv || 0.9)) t.v = -Math.sign(t.v) * R(30 + Math.random() * 45) * d.v;
     t.y += t.v * dt; t.p = R(4 * Math.sin(el * 1.3));
     s.frames++; if (angTo(t.y, t.p) < t.r) s.on++;
+    if (angTo(t.y, t.p) < 4 * t.r) { s.x = s.x || {ah: 0, an: 0}; s.x.ah += clamp(wrap(cam.y - t.y) * Math.sign(t.v) / t.r, -3, 3); s.x.an++; }
     h += f1(Math.max(0, d.s - el)) + ' s   ' + L.hudOn(s.on / Math.max(1, s.frames));
     if (el >= d.s) return finishDrill(now);
   }
@@ -428,7 +437,8 @@ function tick(now) {
   draw(now); raf = requestAnimationFrame(tick);
 }
 function aimDown() {
-  const d = D(); if (d.k === 'track') return;
+  const d = D(); if (XK[d.k]) return XK[d.k].down(performance.now(), d, run.ds);
+  if (d.k === 'track') return;
   if (d.k === 'react') { const now = performance.now(), s = run.ds, ms = T.length ? now - T[0].t0 : 0;
     if (ms < 100) { s.misses++; T = []; s.at = now + 1200 + rnd() * 2000; snd(140, 0.1, 'sawtooth', 0.04); return; }
     FX.push({y: T[0].y, p: T[0].p, r: T[0].r, t0: now}); snd(780, 0.09); return reactHit(now, ms); }
@@ -440,7 +450,7 @@ function aimDown() {
 }
 
 document.addEventListener('mousemove', e => { if (document.pointerLockElement && mode === 'aim') aimMove(e); });
-document.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement && mode === 'aim') aimDown(); });
+document.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement && mode === 'aim') { FIRE = true; aimDown(); } });
 document.addEventListener('keydown', e => {
   if ((e.code === 'Space' || e.code === 'Enter') && !document.pointerLockElement && e.target.tagName !== 'INPUT') { const b = document.getElementById('go'); if (b) { e.preventDefault(); b.click(); } }
 });
@@ -448,5 +458,298 @@ document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && (mode === 'aim' || mode === 'count')) { mode = ''; cancelAnimationFrame(raf);
     show(`<h2>${L.paused}</h2><button id="go" onclick="play(run.drills, run.label, run.sens, run.sd, run.done)">${L.restart}</button>`); }
 });
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), wrap = a => Math.atan2(Math.sin(a), Math.cos(a)), DEG = 180 / Math.PI;
+const VMAX = 5, ACCF = 0.34, FRIC = 5.2, STOPV = 1.6, ACCEL = 5.5, WALLZ = 2.5;
+function walk(dt) {
+  const ix = !!KEYS.KeyD - !!KEYS.KeyA, iz = !!KEYS.KeyW - !!KEYS.KeyS, sp = Math.hypot(VEL[0], VEL[1]);
+  if (sp > 1e-4) { const k = Math.max(0, sp - FRIC * Math.max(sp, STOPV) * dt) / sp; VEL[0] *= k; VEL[1] *= k; }
+  if (ix || iz) { const c = Math.cos(cam.y), n = Math.sin(cam.y), wx = c * ix + n * iz, wz = -n * ix + c * iz, wl = Math.hypot(wx, wz), ux = wx / wl, uz = wz / wl;
+    const add = VMAX - (VEL[0] * ux + VEL[1] * uz); if (add > 0) { const a = Math.min(add, ACCEL * VMAX * dt); VEL[0] += a * ux; VEL[1] += a * uz; } }
+  PL[0] += VEL[0] * dt; PL[1] += VEL[1] * dt; const b = run.box;
+  if (PL[0] < b[0] || PL[0] > b[1]) { PL[0] = clamp(PL[0], b[0], b[1]); VEL[0] = 0; }
+  if (PL[1] < b[2] || PL[1] > b[3]) { PL[1] = clamp(PL[1], b[2], b[3]); VEL[1] = 0; }
+  const v = Math.hypot(VEL[0], VEL[1]), x = run.ds.x, now = performance.now();
+  if (v >= 0.9 * VMAX) x.hi = now; else if (x.hi && v < ACCF * VMAX) { x.stops.push(now - x.hi); x.hi = 0; }
+  return v;
+}
+function shot() { const f = Math.hypot(VEL[0], VEL[1]) / VMAX; if (f <= ACCF) return [cam.y, cam.p, false];
+  const a = R(1 + 7 * (f - ACCF) / (1 - ACCF)) * Math.sqrt(Math.random()), th = Math.random() * 2 * Math.PI;
+  return [cam.y + Math.cos(th) * a / Math.cos(cam.p), cam.p + Math.sin(th) * a, true]; }
+function angAB(y1, p1, y2, p2) { const a = dir(y1, p1), b = dir(y2, p2); return Math.acos(Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])); }
+function wp(x, z, h) { const dx = x - PL[0], dz = z - PL[1]; return proj(Math.atan2(dx, dz), Math.atan2(h, Math.hypot(dx, dz))); }
+function flash(s, c) { run.flash = {s, c, t0: performance.now()}; }
+function xHit(t, now) { run.ds.hits++; run.combo++; FX.push({y: t.y, p: t.p, r: t.r, t0: now}); snd(520 + 25 * Math.min(run.combo, 24), 0.09); }
+function xMiss() { run.ds.misses++; run.combo = 0; snd(140, 0.1, 'sawtooth', 0.04); }
+function leadPoint(t, d) { let x = t.x, z = t.z; for (let k = 0; k < 2; k++) { const tf = Math.hypot(x - PL[0], z - PL[1]) / d.ps; x = t.x + t.v * t.ux * tf; z = t.z + t.v * t.uz * tf; }
+  const dx = x - PL[0], dz = z - PL[1]; return [Math.atan2(dx, dz), Math.atan2(t.h, Math.hypot(dx, dz))]; }
+const capped = (d, el) => el > 10 * d.n + 10 && (endPlay(L.why.cap), true);
+const spdTxt = () => L.co.spd(Math.round(Math.hypot(VEL[0], VEL[1]) / VMAX * 100));
+
+const XK = {
+  switch: {
+    start(now, d) { const c = cam.y; run.ds.x = {fire: 0, onf: 0}; for (let j = 0; j < d.n; j++) T.push({y: c + R(-35 + 70 * (j + 0.2 + rnd() * 0.6) / d.n), p: cam.p + R((rnd() - .5) * 16), r: R(d.r), v: R(15 + rnd() * 20) * d.v * (rnd() < .5 ? -1 : 1), hp: d.hp * 1000, max: d.hp * 1000, c}); },
+    tick(now, dt, d, s, el) { let on = false;
+      for (const t of T.slice()) {
+        if (rnd() < dt * 0.8) t.v = -t.v;
+        if (Math.abs(t.y - t.c) > R(50)) t.v = -Math.sign(t.y - t.c) * Math.abs(t.v);
+        t.y += t.v * dt;
+        if (FIRE && angTo(t.y, t.p) < t.r) { on = true; t.hp -= dt * 1000; if (t.hp <= 0) { T.splice(T.indexOf(t), 1); xHit(t, now); if (!T.length) { finishDrill(now); return ''; } } }
+      }
+      if (FIRE) { s.x.fire += dt; if (on) s.x.onf += dt; }
+      if (capped(d, el)) return null;
+      return L.hudHits(s.hits, d.n) + '   ' + f1(el) + ' s';
+    },
+    down() {},
+  },
+  peek: {
+    start(now, d) { run.doors = []; run.ds.x = {pre: []};
+      for (let j = 0; j < d.doors; j++) run.doors.push({y: cam.y + R(-50 + 100 * (j + 0.5) / d.doors + (rnd() - .5) * 8), p: R((rnd() - .5) * 10)});
+      run.pk = {ph: 'idle', until: now + 900, door: null}; },
+    tick(now, dt, d, s, el) { const pk = run.pk;
+      if (pk.ph === 'idle' && now >= pk.until) { pk.door = run.doors[(rnd() * run.doors.length) | 0]; pk.ph = 'cue'; pk.until = now + d.cue * 1000; }
+      else if (pk.ph === 'cue' && now >= pk.until) { pk.ph = 'up'; const t = {y: pk.door.y + (rnd() < .5 ? -1 : 1) * R(2.2), p: pk.door.p, r: R(d.r), t0: now, life: d.life * 1000};
+        T = [t]; s.x.pre.push(angTo(t.y, t.p) * DEG); }
+      else if (pk.ph === 'up' && T[0] && now - T[0].t0 > T[0].life) { T = []; s.left--; s.misses++; run.combo = 0; snd(150, 0.15, 'sawtooth', 0.05);
+        if (s.left <= 0) { endPlay(L.why.lives); return null; } pk.ph = 'idle'; pk.until = now + 500 + rnd() * 900; }
+      if (capped(d, el)) return null;
+      return L.hudHits(s.hits, d.n) + '   ' + L.lives + ' ' + '●'.repeat(Math.max(0, s.left));
+    },
+    down(now, d, s) { const t = T[0]; if (!t || angTo(t.y, t.p) >= t.r) return xMiss();
+      xHit(t, now); T = []; if (s.hits >= d.n) return finishDrill(now); run.pk.ph = 'idle'; run.pk.until = now + 500 + rnd() * 900; },
+    draw() { for (const dr of run.doors) { const hot = run.pk.door === dr && run.pk.ph !== 'idle';
+      g.strokeStyle = hot ? '#00d8ff' : '#2a3a5c'; g.lineWidth = hot ? 4 : 3;
+      for (const sx of [-1, 1]) { const a = proj(dr.y + sx * R(3.5), dr.p - R(5)), b = proj(dr.y + sx * R(3.5), dr.p + R(3.5)); if (a && b) { g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); } }
+      g.lineWidth = 1; } },
+  },
+  lead: {
+    start(now, d) { PL = [0, 0]; run.shots = []; run.cool = 0; this.spawn(now, d); },
+    spawn(now, d) { const side = rnd() < .5 ? -1 : 1, a = cam.y + side * R(10 + rnd() * 35), dd = 10 + rnd() * 8;
+      const t = {x: dd * Math.sin(a), z: dd * Math.cos(a), ux: Math.cos(a), uz: -Math.sin(a), v: (rnd() < .5 ? -1 : 1) * (5 + rnd() * 3) * d.v, h: -0.2 + rnd() * 0.6, t0: now};
+      placeMover(t); T = [t]; },
+    tick(now, dt, d, s, el) { const t = T[0]; if (rnd() < dt * d.rv) t.v = -t.v;
+      t.x += t.v * dt * t.ux; t.z += t.v * dt * t.uz; placeMover(t); run.cool -= dt;
+      const n = Math.max(1, Math.ceil(d.ps * dt / 0.4)), h = dt / n;
+      for (const b of run.shots.slice()) for (let k = 0; k < n; k++) {
+        b.x += b.dx * d.ps * h; b.h += b.dh * d.ps * h; b.z += b.dz * d.ps * h; b.gone += d.ps * h;
+        if (Math.hypot(b.x - t.x, b.h - t.h, b.z - t.z) < 0.75) { run.shots = []; xHit(t, now); if (s.hits >= d.n) { finishDrill(now); return ''; } this.spawn(now, d); return L.hudHits(s.hits, d.n); }
+        if (b.gone > 40) { run.shots.splice(run.shots.indexOf(b), 1); xMiss(); break; }
+      }
+      if (now - t.t0 > 7000) { s.misses += 2; this.spawn(now, d); }
+      if (capped(d, el)) return null;
+      return L.hudHits(s.hits, d.n) + '   ' + f1(el + 0.25 * s.misses) + ' s';
+    },
+    down() { if (run.cool > 0) return; run.cool = 0.25; const v = dir(cam.y, cam.p);
+      run.shots.push({x: PL[0], h: 0, z: PL[1], dx: v[0], dh: v[1], dz: v[2], gone: 0}); snd(300, 0.05, 'square', 0.03); },
+    draw(now, d) {
+      if (d.ghost && T[0]) { const t = T[0], gp = leadPoint(t, d), s = proj(gp[0], gp[1]);
+        if (s) { g.strokeStyle = `rgba(255,200,61,${0.85 * d.ghost})`; g.lineWidth = 2; g.setLineDash([5, 4]); g.beginPath(); g.arc(s[0], s[1], Math.max(4, s[2] * Math.tan(t.r)), 0, 7); g.stroke(); g.setLineDash([]); g.lineWidth = 1; } }
+      for (const b of run.shots) { const dx = b.x - PL[0], dz = b.z - PL[1], s = proj(Math.atan2(dx, dz), Math.atan2(b.h, Math.hypot(dx, dz)));
+        if (s) { g.fillStyle = '#ffc83d'; g.beginPath(); g.arc(s[0], s[1], Math.max(2.5, s[2] * 0.08 / Math.hypot(dx, dz)), 0, 7); g.fill(); } }
+    },
+  },
+  cs: { walk: true,
+    start(now, d) { PL = [0, 0]; VEL = [0, 0]; run.box = [-5, 5, -5, 5]; run.ds.x = {stops: [], hi: 0, ms: 0, tr: 0}; this.spawn(now, d); },
+    spawn(now, d) { const a = R((rnd() - .5) * 70), dd = 10 + rnd() * 6;
+      const t = {x: PL[0] + dd * Math.sin(a), z: PL[1] + dd * Math.cos(a), h: rnd() * 0.5, v: 0, ux: 0, uz: 0, t0: now, wait: true}; placeMover(t); T = [t]; run.ds.x.tr = 0; },
+    tick(now, dt, d, s, el) { const v = walk(dt), t = T[0]; s.x.tr += v * dt; placeMover(t);
+      if (t.wait && s.x.tr >= d.go) { t.wait = false; snd(660, 0.06); }
+      if (capped(d, el)) return null;
+      return L.hudHits(s.hits, d.n) + '   ' + f1(el + 0.25 * s.misses) + ' s   ' + (t.wait ? L.co.moveFirst : spdTxt());
+    },
+    down(now, d, s) { const t = T[0]; if (t.wait) { flash(L.co.moveFirst, '#ffc83d'); return xMiss(); }
+      const [y, p, moving] = shot(); if (moving) { s.x.ms++; flash(L.co.moving, '#ff4d5e'); }
+      if (angAB(y, p, t.y, t.p) >= t.r) return xMiss();
+      xHit(t, now); if (s.hits >= d.n) return finishDrill(now); this.spawn(now, d); },
+  },
+  wtrack: { walk: true,
+    start(now, d) { PL = [0, 0]; VEL = [0, 0]; run.box = [-5, 5, -2, 2]; run.ds.x = {stops: [], hi: 0, mv: 0};
+      const a = cam.y + R((rnd() - .5) * 30), dd = 9 + rnd() * 3;
+      const t = {x: dd * Math.sin(a), z: dd * Math.cos(a), ux: Math.cos(a), uz: -Math.sin(a), v: 5 * d.v, h: 0.2, o: 0, t0: now}; placeMover(t); T = [t]; },
+    tick(now, dt, d, s, el) { const v = walk(dt), t = T[0];
+      if (Math.abs(t.o) > 5) t.v = -Math.sign(t.o) * Math.abs(t.v); else if (rnd() < dt * d.rv) t.v = -t.v;
+      t.o += t.v * dt; t.x += t.v * dt * t.ux; t.z += t.v * dt * t.uz; placeMover(t);
+      s.frames++; if (angTo(t.y, t.p) < t.r) s.on++; if (v > 0.5 * VMAX) s.x.mv++;
+      if (el >= d.s) { s.x.mv /= s.frames; finishDrill(now); return ''; }
+      return f1(Math.max(0, d.s - el)) + ' s   ' + L.hudOn(s.on / s.frames) + '   ' + L.co.mvShare(pct(s.x.mv / s.frames));
+    },
+    down() {},
+  },
+  jig: { walk: true,
+    start(now, d) { PL = [-1.4, 0]; VEL = [0, 0]; run.box = [-2.5, 2.5, 0, 0]; run.ds.x = {stops: [], hi: 0, ms: 0, shot: 0, exp: 0}; this.spawn(now, d); },
+    spawn(now, d) { const t = {x: 1.5 + rnd() * 3.5, z: 13 + rnd() * 5, h: 0.1 + rnd() * 0.3, v: 0, ux: 0, uz: 0, t0: now}; placeMover(t); T = [t]; },
+    seen(t) { return PL[0] + (t.x - PL[0]) * (WALLZ - PL[1]) / (t.z - PL[1]) > 0; },
+    tick(now, dt, d, s, el) { walk(dt); const t = T[0]; placeMover(t); t.hide = !this.seen(t);
+      if (t.hide) s.x.exp = 0;
+      else if ((s.x.exp += dt) > d.exp) { s.x.exp = 0; s.x.shot++; s.left--; run.combo = 0; flash(L.co.shot, '#ff4d5e'); snd(150, 0.2, 'sawtooth', 0.06);
+        if (s.left <= 0) { endPlay(L.why.lives); return null; } this.spawn(now, d); }
+      if (capped(d, el)) return null;
+      return L.hudHits(s.hits, d.n) + '   ' + L.lives + ' ' + '●'.repeat(Math.max(0, s.left)) + '   ' + spdTxt();
+    },
+    down(now, d, s) { const t = T[0], [y, p, moving] = shot(); if (moving) { s.x.ms++; flash(L.co.moving, '#ff4d5e'); }
+      if (t.hide || angAB(y, p, t.y, t.p) >= t.r) return xMiss();
+      xHit(t, now); s.x.exp = 0; if (s.hits >= d.n) return finishDrill(now); this.spawn(now, d); },
+    draw() { const pts = [];
+      for (let k = 0; k <= 16; k++) pts.push(wp(-7 + 7 * k / 16, WALLZ, -1.7));
+      for (let k = 16; k >= 0; k--) pts.push(wp(-7 + 7 * k / 16, WALLZ, 2.4));
+      g.fillStyle = '#18213a'; g.beginPath(); let n = 0; for (const q of pts) if (q) { n++ ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); } if (n > 2) { g.closePath(); g.fill(); }
+      const a = wp(0, WALLZ, -1.7), b = wp(0, WALLZ, 2.4); if (a && b) { g.strokeStyle = '#4a6ea8'; g.lineWidth = 3; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); g.lineWidth = 1; } },
+  },
+};
+function xOver(now, d) {
+  const w = 240, x = cv.width / 2 - w / 2, y = cv.height - 70, f = Math.min(1, Math.hypot(VEL[0], VEL[1]) / VMAX);
+  g.fillStyle = '#141d30'; g.fillRect(x, y, w, 10); g.fillStyle = f <= ACCF ? '#36d07a' : '#ff4d5e'; g.fillRect(x, y, w * f, 10);
+  g.fillStyle = '#fff'; g.fillRect(x + w * ACCF - 1, y - 4, 2, 18);
+}
+
+const LESSONS = [
+  {c: 0, d: [{k: 'flick', n: 12, r: 2.4}], ok: r => r[0].misses <= 4},
+  {c: 0, d: [{k: 'track', s: 12, r: 2.6, v: 0.8}], ok: r => r[0].on >= 0.4},
+  {c: 1, d: [{k: 'switch', n: 5, hp: 0.6, v: 0.5, r: 2.8}], ok: r => r[0].time <= 15},
+  {c: 1, d: [{k: 'track', s: 12, r: 2.6, v: 1.1, rv: 2.4}], ok: r => r[0].on >= 0.35},
+  {c: 2, d: [{k: 'peek', n: 8, r: 2.4, life: 1.6, lives: 3, cue: 0.9, doors: 4}]},
+  {c: 2, d: [{k: 'peek', n: 10, r: 2.2, life: 1.4, lives: 3, cue: 0, doors: 5}]},
+  {c: 3, d: [{k: 'cs', n: 10, go: 1.5}], ok: r => r[0].x.ms <= 3},
+  {c: 3, d: [{k: 'wtrack', s: 12, v: 1, rv: 1.4}], ok: r => r[0].on >= 0.25 && r[0].x.mv >= 0.5},
+  {c: 3, d: [{k: 'jig', n: 6, lives: 3, exp: 0.9}]},
+  {c: 4, d: [{k: 'lead', n: 5, v: 0.7, ps: 60, rv: 0.2, ghost: 1}]},
+  {c: 4, d: [{k: 'lead', n: 6, v: 0.9, ps: 50, rv: 0.35, ghost: 0}]},
+  {c: 4, d: [{k: 'flick', n: 8, r: 2.2}, {k: 'cs', n: 5, go: 1.2}, {k: 'peek', n: 5, r: 2.2, life: 1.3, lives: 3, cue: 0, doors: 5}], ok: r => r[1].x.ms <= 2},
+];
+TX.en.co = {
+  go: 'The Course', title: 'The Course', back: 'Course', next: 'Next lesson', passed: 'LESSON COMPLETE',
+  sub: '12 lessons in 5 chapters: hands, eyes, feet and timing. Take the Rank Test before you start and again when you finish; the difference is your progress, measured against real players.',
+  day: 'About 30 minutes a day, two or three lessons a day. In a study of 7,174 Aim Lab players, accuracy settled within about five days while speed kept improving for weeks.',
+  needB: 'First, the Rank Test, so your progress can be measured.', before: 'Rank Test: before', after: 'Rank Test: after',
+  bAt: t => 'Before: ' + t, aAt: t => 'After: ' + t, done: 'All 12 lessons done. Take the Rank Test again to see what changed.',
+  cmpT: 'Before and after', bef: 'Before', aft: 'After', rows: ['Reaction', 'Time per flick', 'Tracking on target', 'Top share of players'],
+  ch: ['Mechanics', 'Confidence', 'Perception', 'Movement', 'Prediction'],
+  chNote: ['', 'Trainer scores alone do not make you better in real games. This chapter trains the hand; the next ones train eyes, feet and timing.', '', 'Use W A S D like in your game. A bar at the bottom shows your speed: shots are exact only left of the white line.', ''],
+  think: 'Think.', eyes: 'Eyes.', hands: 'Hands.', goalWas: g => 'The goal: ' + g,
+  spd: p => `speed ${p}%`, moveFirst: 'STRAFE FIRST', moving: 'MOVING: SHOT SPRAYED', shot: 'YOU WERE SHOT', mvShare: p => `moving ${p}`,
+  lab: {miss: 'misses', on: 'on target'}, u: ' s',
+  t: {verify: 'You clicked before you were on the target. Let the crosshair land, then click.',
+    commit: 'Accurate but slow. Make one fast move most of the way, then one small correction (two-step flick).',
+    trail: 'You trail the target: you aim where it was. Move with it, not after it.',
+    over: 'You run ahead of the target when it turns. Ease off and make smaller corrections.',
+    calm: 'Low time on target. Slow your hand down and match its speed before you try to be fast.',
+    slowStop: ms => `Your stops take ${ms} ms. Tap the opposite key to stop (counter-strafe); that takes under 100 ms.`,
+    movShots: n => `${n} ${n > 1 ? 'shots' : 'shot'} left while you were still moving and sprayed. Stop first, then click.`,
+    keepMoving: 'You stood still too much. Keep pressing A and D while you aim.',
+    preaim: a => `Your crosshair was ${a} degrees from where the enemy appeared. Park it on the door edge at head height.`,
+    exposed: n => `You were shot ${n} ${n > 1 ? 'times' : 'time'}: you stayed out too long. Peek short to look, go back, then come out with your aim already on him.`,
+    lead: 'Most shots missed. Aim further ahead, and more the further away the target is.',
+    waste: p => `Only ${p} of your firing was on a target. Land on it first, then hold the button.`,
+    clean: 'Clean run. Repeat it tomorrow as a warm-up, then move on.'},
+  ls: [
+    {n: 'First Strike', think: 'One clean motion beats three nervous ones. Decide, move, click.', eyes: 'Look at the target, not at your crosshair. Your hand follows your eyes.', hands: 'Relaxed grip: wrist for small moves, elbow and arm for big ones. Tense only at the moment you click.', goal: 'Hit 12 targets with no more than 4 misses.'},
+    {n: 'Still Water', think: 'Calm hands track better than fast hands. Match its speed; do not chase it.', eyes: 'Watch the centre of the target and the direction it moves.', hands: 'Light grip, smooth arm. Breathe out.', goal: 'Keep the crosshair on the target for 40% of 12 seconds.'},
+    {n: 'Chain Strike', think: 'Finish one, then take the nearest next one. Never plan three targets ahead.', eyes: 'While one breaks, your eyes already move to the next.', hands: 'Hold the left button while you are on it; let go when you slip off.', goal: 'Break 5 targets within 15 seconds by holding fire on each.'},
+    {n: 'Flow', think: 'You cannot predict a random dodge. React small and stay centred.', eyes: 'Use the whole target, not one point. Watch for the turn.', hands: 'Small corrections. Overshooting a dodge costs more than lagging a little.', goal: 'Stay on a fast-dodging target for 35% of 12 seconds.'},
+    {n: 'Foresight I', think: 'Most fights are won before the enemy appears, by where your crosshair already is.', eyes: 'Look where the enemy WILL appear, not at your crosshair. A door lights up first.', hands: 'Park the crosshair at head height on the door edge; then the shot is a tiny move.', goal: 'Hit 8 enemies as they peek out. 3 escapes and it ends.'},
+    {n: 'Foresight II', think: 'No warning now. Hold the most likely spot and stay ready.', eyes: 'Keep the doors at the edge of your vision. Side vision notices movement first.', hands: 'Keep the crosshair at head height between the doors. Never aim at the floor.', goal: 'Hit 10 enemies with no warning. Your pre-aim distance is measured.'},
+    {n: 'Northstep I', think: 'In most shooters a shot only lands where you aim when you stand still. Stop, shoot, move.', eyes: 'Watch the speed bar. Shoot when it is left of the line.', hands: 'Move with A and D. To stop at once, tap the opposite key (counter-strafe) instead of letting go.', goal: 'Each target wakes up after you strafe 1.5 m. Stop and hit it. 10 targets.'},
+    {n: 'Northstep II', think: 'A moving player is hard to hit. Keep aiming while your feet work.', eyes: 'Your own movement drags the target across the screen. Correct against it.', hands: 'A and D with frequent direction changes (ADAD); the mouse stays on the target.', goal: 'Move at least half the time and stay on target 25% of 12 seconds.'},
+    {n: 'Feint', think: 'Information first. A short peek shows where he is; the second peek takes him.', eyes: 'Peek and remember exactly where he stands. Then come out with your aim already there.', hands: 'D steps out, A goes back. Stop before you shoot. Stay out too long and he shoots you.', goal: 'Take down 6 enemies behind the corner. Get shot 3 times and it ends.'},
+    {n: 'Stone Cannon I', think: 'A slow shot lands where the target will be, not where it is.', eyes: 'Read its direction and speed. The further away, the more you lead.', hands: 'Aim at the dashed ring, fire, and keep following until the shot lands.', goal: 'Your shots fly slowly. Hit 5 running targets.'},
+    {n: 'Stone Cannon II', think: 'Now without help. Picture the ring yourself.', eyes: 'Read the run: if it just turned, wait a beat before you commit.', hands: 'Lead, fire, adjust after every miss.', goal: 'Hit 6 running targets with slow shots and no guide.'},
+    {n: 'North God Trial', think: 'Everything together: first strike, footwork, foresight.', eyes: 'Your eyes are always ahead of your crosshair.', hands: 'Stop before you shoot. Stay relaxed.', goal: 'Flicks, then stop and shoot, then peeks with no warning.'},
+  ],
+};
+TX.hu.co = {
+  go: 'A kurzus', title: 'A kurzus', back: 'Kurzus', next: 'Következő lecke', passed: 'LECKE KÉSZ',
+  sub: '12 lecke 5 fejezetben: kéz, szem, láb és időzítés. Kezdés előtt és a végén is csináld meg a Rangtesztet; a különbség a fejlődésed, valódi játékosokhoz mérve.',
+  day: 'Naponta nagyjából 30 perc, két-három lecke. Egy 7174 Aim Lab-játékosról szóló kutatásban a pontosság körülbelül öt nap alatt beállt, a sebesség pedig hetekig tovább javult.',
+  needB: 'Előbb a Rangteszt, hogy mérhető legyen a fejlődésed.', before: 'Rangteszt: előtte', after: 'Rangteszt: utána',
+  bAt: t => 'Előtte: ' + t, aAt: t => 'Utána: ' + t, done: 'Mind a 12 lecke kész. Csináld meg újra a Rangtesztet, és meglátod, mi változott.',
+  cmpT: 'Előtte és utána', bef: 'Előtte', aft: 'Utána', rows: ['Reakció', 'Idő célonként', 'Követés a célon', 'Helyezés a játékosok között'],
+  ch: ['Mechanika', 'Magabiztosság', 'Észlelés', 'Mozgás', 'Előrejelzés'],
+  chNote: ['', 'Az edzőprogram pontszáma önmagában nem tesz jobbá a valódi játékban. Ez a fejezet a kezet edzi; a következők a szemet, a lábat és az időzítést.', '', 'Használd a W A S D gombokat, mint a játékodban. Lent egy sáv mutatja a sebességedet: a lövés csak a fehér vonaltól balra pontos.', ''],
+  think: 'Gondolkodás.', eyes: 'Szem.', hands: 'Kéz.', goalWas: g => 'A cél: ' + g,
+  spd: p => `sebesség ${p}%`, moveFirst: 'ELŐBB OLDALAZZ', moving: 'MOZGÁS: SZÓRT A LÖVÉS', shot: 'ELTALÁLTAK', mvShare: p => `mozgásban ${p}`,
+  lab: {miss: 'hiba', on: 'a célon'}, u: ' mp',
+  t: {verify: 'Kattintottál, mielőtt a célon lettél volna. Hagyd, hogy a célkereszt odaérjen, aztán kattints.',
+    commit: 'Pontos, de lassú. Egy gyors mozdulattal tedd meg az út nagyját, aztán egy kis korrekció (kétlépcsős célravetés).',
+    trail: 'Lemaradsz a céltól: oda célzol, ahol volt. Vele együtt mozdulj, ne utána.',
+    over: 'Fordulásnál elé szaladsz. Lazíts, és kisebbeket korrigálj.',
+    calm: 'Kevés idő a célon. Lassíts a kezeden, vedd fel a cél sebességét, és csak utána legyél gyors.',
+    slowStop: ms => `A megállásaid ${ms} ms-ig tartanak. Az ellenkező gombra koppintva állj meg (ellenlépés); az 100 ms alatt van.`,
+    movShots: n => `${n} lövés ment el, miközben még mozogtál, és szórt. Előbb állj meg, aztán kattints.`,
+    keepMoving: 'Túl sokat álltál. Célzás közben is nyomd az A-t és a D-t.',
+    preaim: a => `A célkereszted ${a.replace('.', ',')} fokra volt attól a ponttól, ahol az ellenfél megjelent. Tedd az ajtó szélére, fejmagasságba.`,
+    exposed: n => `${n}-szor eltaláltak: túl sokáig voltál kint. Rövid kikukucskálással nézz körül, menj vissza, aztán már odacélozva lépj ki.`,
+    lead: 'A lövések többsége mellément. Tarts jobban elé, és minél messzebb a cél, annál jobban.',
+    waste: p => `A lövéseidnek csak ${p}-a volt a célon. Előbb érj rá, aztán tartsd lenyomva a gombot.`,
+    clean: 'Tiszta menet. Holnap bemelegítésnek ismételd meg, aztán haladj tovább.'},
+  ls: [
+    {n: 'Első csapás', think: 'Egy tiszta mozdulat többet ér három idegesnél. Dönts, mozdulj, kattints.', eyes: 'A célt nézd, ne a célkeresztet. A kezed követi a szemedet.', hands: 'Laza fogás: kis mozdulatokhoz csukló, nagyokhoz könyök és kar. Csak a kattintás pillanatában feszülj meg.', goal: 'Találj el 12 célt, legfeljebb 4 hibával.'},
+    {n: 'Csendes víz', think: 'A nyugodt kéz jobban követ, mint a gyors. Vedd fel a sebességét, ne üldözd.', eyes: 'A cél közepét és a mozgása irányát figyeld.', hands: 'Könnyű fogás, sima karmozgás. Fújd ki a levegőt.', goal: 'Tartsd a célkeresztet a célon a 12 másodperc 40%-ában.'},
+    {n: 'Lánccsapás', think: 'Fejezd be az egyiket, aztán jöhet a legközelebbi. Ne tervezz három célt előre.', eyes: 'Amíg az egyik szétesik, a szemed már a következőn van.', hands: 'Tartsd lenyomva a bal gombot, amíg rajta vagy; engedd el, ha lecsúsztál.', goal: 'Törj szét 5 célt 15 másodperc alatt; mindegyiken tartsd lenyomva a gombot.'},
+    {n: 'Áramlás', think: 'A véletlen cselt nem tudod kitalálni. Reagálj kicsiket, és maradj középen.', eyes: 'Az egész célt használd, ne egy pontot. Figyeld a fordulást.', hands: 'Kis korrekciók. A túllendülés többe kerül, mint egy kis lemaradás.', goal: 'Maradj a gyorsan cselező célon a 12 másodperc 35%-ában.'},
+    {n: 'Előrelátó szem I', think: 'A legtöbb párharcot azelőtt nyered meg, hogy az ellenfél megjelenik: azzal, hol van már a célkereszted.', eyes: 'Oda nézz, ahol az ellenfél MEG FOG jelenni, ne a célkeresztedre. Előtte felvillan egy ajtó.', hands: 'Tedd a célkeresztet fejmagasságba az ajtó szélére; így a lövés csak egy apró mozdulat.', goal: 'Találj el 8 ellenfelet, ahogy előbukkannak. 3 szökés után vége.'},
+    {n: 'Előrelátó szem II', think: 'Most nincs figyelmeztetés. Tartsd a legvalószínűbb pontot, és légy készen.', eyes: 'Az ajtókat a látómeződ szélén tartsd. A szemed széle veszi észre először a mozgást.', hands: 'A célkereszt fejmagasságban legyen az ajtók között. Soha ne a földre célozz.', goal: 'Találj el 10 ellenfelet figyelmeztetés nélkül. Mérjük, milyen messze volt a célkereszted.'},
+    {n: 'Északi lépés I', think: 'A legtöbb lövöldözős játékban csak állva megy oda a lövés, ahová célzol. Állj meg, lőj, mozdulj.', eyes: 'Figyeld a sebességsávot. Akkor lőj, amikor a vonaltól balra van.', hands: 'A és D: oldalazás. Azonnali megálláshoz koppints az ellenkező gombra (ellenlépés), ne csak engedd el.', goal: 'Minden cél akkor éled fel, ha 1,5 métert oldalaztál. Állj meg, és találd el. 10 cél.'},
+    {n: 'Északi lépés II', think: 'A mozgó játékost nehéz eltalálni. Célozz tovább, miközben a lábad dolgozik.', eyes: 'A saját mozgásod elhúzza a célt a képernyőn. Korrigálj ellene.', hands: 'A és D, gyakori irányváltással (ADAD); az egér maradjon a célon.', goal: 'Legalább az idő felében mozogj, és maradj a célon a 12 másodperc 25%-ában.'},
+    {n: 'Csel', think: 'Előbb az információ. Egy rövid kikukucskálás megmutatja, hol áll; a második leveszi.', eyes: 'Kukucskálj ki, és jegyezd meg pontosan, hol áll. Aztán már odacélozva lépj ki.', hands: 'D: kilépés, A: vissza. Lövés előtt állj meg. Ha túl sokáig vagy kint, lelő.', goal: 'Vegyél le 6 ellenfelet a sarok mögött. Ha 3-szor eltalálnak, vége.'},
+    {n: 'Kőágyú I', think: 'A lassú lövés oda érkezik, ahol a cél lesz, nem ahol most van.', eyes: 'Olvasd az irányát és a sebességét. Minél messzebb van, annál jobban tarts elé.', hands: 'Célozz a szaggatott körre, lőj, és kövesd tovább, amíg a lövés becsapódik.', goal: 'A lövéseid lassan repülnek. Találj el 5 futó célt.'},
+    {n: 'Kőágyú II', think: 'Most segítség nélkül. Képzeld oda magad a kört.', eyes: 'Olvasd a futását: ha épp fordult, várj egy pillanatot, mielőtt lősz.', hands: 'Tarts elé, lőj, és minden hiba után igazíts.', goal: 'Találj el 6 futó célt lassú lövéssel, segítség nélkül.'},
+    {n: 'Az Északi Isten próbája', think: 'Minden együtt: első csapás, lábmunka, előrelátás.', eyes: 'A szemed mindig a célkereszt előtt jár.', hands: 'Lövés előtt állj meg. Maradj laza.', goal: 'Célravetés, aztán megállás és lövés, aztán figyelmeztetés nélküli kikukucskálás.'},
+  ],
+};
+
+function tipOf(res) { const t = L.co.t, out = [], avg = a => a.reduce((p, q) => p + q, 0) / a.length;
+  for (const r of res) { const x = r.x || {};
+    if (r.k === 'flick' && r.misses > 0.3 * r.n) out.push(t.verify);
+    else if (r.k === 'flick' && r.time / r.n > 1.1) out.push(t.commit);
+    if (r.k === 'track' && x.an > 30 && r.on < 0.6) { const ah = x.ah / x.an; if (ah < -0.35) out.push(t.trail); else if (ah > 0.35) out.push(t.over); }
+    if ((r.k === 'track' || r.k === 'wtrack') && r.on < 0.3) out.push(t.calm);
+    if (x.stops && x.stops.length) { const st = avg(x.stops); if (st > 120) out.push(t.slowStop(Math.round(st))); }
+    if (x.ms) out.push(t.movShots(x.ms));
+    if (r.k === 'wtrack' && x.mv < 0.5) out.push(t.keepMoving);
+    if (x.pre && x.pre.length) { const pa = avg(x.pre); if (pa > 8) out.push(t.preaim(f1(pa))); }
+    if (x.shot) out.push(t.exposed(x.shot));
+    if (r.k === 'lead' && r.misses > r.n) out.push(t.lead);
+    if (r.k === 'switch' && x.fire > 0.5 && x.onf / x.fire < 0.6) out.push(t.waste(pct(x.onf / x.fire)));
+  }
+  return out.length ? out.slice(0, 2) : [t.clean];
+}
+const sumRes = res => res.map(r => r.k === 'track' || r.k === 'wtrack' ? pct(r.on) + ' ' + L.co.lab.on : f1(r.time) + ' s, ' + r.misses + ' ' + L.co.lab.miss).join(' &middot; ');
+let CT = '';
+function course() {
+  const P = me(), C = P.co = P.co || {}, n = LESSONS.filter((x, i) => C[i]).length, rk = r => L.tiers[rkScore(r).t];
+  let h = `<div class="tag">${NAME}</div><h2>${L.co.title}</h2><p>${L.co.sub}</p><div class="bar"><i style="width:${n / LESSONS.length * 100}%"></i></div>`;
+  if (!P.rkB) return show(h + `<div class="hype">${L.co.needB}</div><button id="go" onclick="CT='B';rankTest()">${L.co.before}</button><button class="alt" onclick="map()">${L.map}</button>`);
+  h += `<div class="rank" style="font-size:17px">${L.co.bAt(rk(P.rkB))}${P.rkA ? ' &middot; ' + L.co.aAt(rk(P.rkA)) : ''}</div>`;
+  L.co.ch.forEach((c, k) => { h += `<div class="dim" style="margin-top:12px">${k + 1}. ${c}</div><div class="grid" style="margin-top:6px">` + LESSONS.map((x, i) => {
+    if (x.c !== k) return ''; const open = i === 0 || C[i - 1] || C[i];
+    return `<div class="tile${open ? '' : ' lock'}${!C[i] && open ? ' next' : ''}" ${open ? `onclick="lessonIntro(${i})"` : ''}>${i + 1}<b>${L.co.ls[i].n}</b><span class="s">${C[i] ? '&#10003;' : '&nbsp;'}</span></div>`; }).join('') + '</div>'; });
+  const nx = LESSONS.findIndex((x, i) => !C[i]);
+  h += nx >= 0 ? `<button id="go" onclick="lessonIntro(${nx})">${nx + 1}. ${L.co.ls[nx].n}</button>` : `<div class="hype">${L.co.done}</div><button id="go" onclick="CT='A';rankTest()">${L.co.after}</button>`;
+  show(h + `<button class="alt" onclick="map()">${L.map}</button>${P.rkA ? cmpHtml(P.rkB, P.rkA) : ''}<p class="dim">${L.co.day}</p>`);
+}
+function cmpHtml(b, a) { const sb = rkScore(b), sa = rkScore(a), d = sa.t - sb.t, ms = x => Math.round(+x) + ' ms', sec = x => (+x).toFixed(2) + L.co.u;
+  return `<h2 style="margin-top:18px;font-size:20px">${L.co.cmpT}</h2><div class="rank" style="font-size:24px">${L.tiers[sb.t]} &rarr; ${L.tiers[sa.t]} (${d >= 0 ? '+' : ''}${d})</div>
+  <table style="width:100%;font-size:15px;border-collapse:collapse"><tr class="dim"><td></td><td>${L.co.bef}</td><td>${L.co.aft}</td></tr>
+  <tr><td>${L.co.rows[0]}</td><td>${ms(b.rt)}</td><td>${ms(a.rt)}</td></tr><tr><td>${L.co.rows[1]}</td><td>${sec(b.fl)}</td><td>${sec(a.fl)}</td></tr>
+  <tr><td>${L.co.rows[2]}</td><td>${pct(+b.on)}</td><td>${pct(+a.on)}</td></tr><tr><td>${L.co.rows[3]}</td><td>${topTxt(sb.top)}</td><td>${topTxt(sa.top)}</td></tr></table>`; }
+function lessonIntro(i) { const x = L.co.ls[i], c = LESSONS[i].c;
+  show(`<div class="tag">${c + 1}. ${L.co.ch[c]} &middot; ${i + 1}/${LESSONS.length}</div><h2>${x.n}</h2>${L.co.chNote[c] ? `<p class="dim">${L.co.chNote[c]}</p>` : ''}
+  <p><b>${L.co.think}</b> ${x.think}</p><p><b>${L.co.eyes}</b> ${x.eyes}</p><p><b>${L.co.hands}</b> ${x.hands}</p><div class="hype">${x.goal}</div>
+  <button id="go" onclick="playLesson(${i})">${L.go}</button><button class="alt" onclick="course()">${L.co.back}</button>`); }
+function playLesson(i) { play(LESSONS[i].d.map(x => Object.assign({}, x)), L.co.ls[i].n, me().sens, Date.now(), (res, why) => lessonDone(i, res, why)); }
+function lessonDone(i, res, why) {
+  const P = me(), C = P.co = P.co || {}, d = run.drills[run.di], s = run.ds;
+  const part = why && d ? [{k: d.k, n: d.n, time: 0, misses: s.misses, on: s.on / Math.max(1, s.frames), x: s.x}] : [];
+  const ok = !why && (!LESSONS[i].ok || LESSONS[i].ok(res)), tips = tipOf(res.concat(part)), last = i + 1 >= LESSONS.length;
+  if (ok) { C[i] = (C[i] || 0) + 1; save(); tune([523, 659, 784, 1047], 110, 0.3); } else tune([392, 330, 262], 130, 0.22);
+  show(`<div class="tag">${i + 1}. ${L.co.ls[i].n}</div>${ok ? `<div class="clear">${L.co.passed}</div>` : `<div class="fail">${L.notYet}</div><p>${why || L.co.goalWas(L.co.ls[i].goal)}</p>`}
+  ${res.length ? `<p class="dim">${sumRes(res)}</p>` : ''}${tips.map(t => `<p>${t}</p>`).join('')}
+  ${ok ? `<button id="go" onclick="${last ? 'course()' : `lessonIntro(${i + 1})`}">${last ? L.co.back : L.co.next}</button><button class="alt" onclick="playLesson(${i})">${L.retry}</button>`
+       : `<button id="go" onclick="playLesson(${i})">${L.retry}</button>`}<button class="alt" onclick="course()">${L.co.back}</button>`);
+}
+document.addEventListener('keydown', e => { KEYS[e.code] = true; });
+document.addEventListener('keyup', e => { delete KEYS[e.code]; });
+addEventListener('blur', () => { for (const k in KEYS) delete KEYS[k]; });
+document.addEventListener('mouseup', e => { if (e.button === 0) FIRE = false; });
+
 intro();
 </script></body></html>
