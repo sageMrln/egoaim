@@ -81,7 +81,7 @@ en: {
   setNo: (p, d) => `Last time you got ${p}, ${d} apart, so it has not settled yet. Run it again another day; within 10% means settled.`,
   keep: 'Then keep it: play with this number for at least a week before you change it.', train: 'Training begins',
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} on target`, combo: c => `COMBO x${c}`, lives: 'Lives',
-  paused: 'Paused', restart: 'Restart', lockFail: 'The browser did not lock the mouse yet. Press Restart once more.', compat: c => 'Compatibility mode: ' + (c ? 'ON' : 'OFF'), compatNote: 'View will not turn, or the mouse feels wrong? Turn compatibility mode on: plain mouse input and plain drawing.', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
+  paused: 'Paused', restart: 'Restart', sensAdj: g => 'Your ' + g + ' sensitivity', sensTip: 'Too fast or too slow? Nudge it here, then set the same number in your game.', lockFail: 'The browser did not lock the mouse yet. Press Restart once more.', compat: c => 'Compatibility mode: ' + (c ? 'ON' : 'OFF'), compatNote: 'View will not turn, or the mouse feels wrong? Turn compatibility mode on: plain mouse input and plain drawing.', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
   rawNote: '   (raw input not available, so turn off "Enhance pointer precision" in Windows)',
   tiers: ['Beginner', 'Intermediate', 'Advanced', 'Saint', 'King', 'Emperor', 'God'], tier: t => 'Rank: ' + t,
   tierNote: 'Your rank comes from your best Rank Test, measured against real players. God is pro esports level (about the top 0.5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
@@ -121,7 +121,7 @@ hu: {
   setNo: (p, d) => `Legutóbb ${p} lett, ${d} az eltérés, így még nem állt be. Futtasd újra egy másik napon; 10%-on belül azt jelenti, beállt.`,
   keep: 'Utána maradj ennél: legalább egy hétig játssz ezzel a számmal, mielőtt változtatsz rajta.', train: 'Kezdődik az edzés',
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} a célon`, combo: c => `KOMBÓ x${c}`, lives: 'Életek',
-  paused: 'Szünet', restart: 'Újrakezdés', lockFail: 'A böngésző még nem rögzítette az egeret. Nyomd meg még egyszer az Újrakezdést.', compat: c => 'Kompatibilis mód: ' + (c ? 'BE' : 'KI'), compatNote: 'Nem fordul a nézet, vagy furcsa az egér? Kapcsold be a kompatibilis módot: egyszerű egérbemenet és egyszerű rajzolás.', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
+  paused: 'Szünet', restart: 'Újrakezdés', sensAdj: g => g + ' érzékenységed', sensTip: 'Túl gyors vagy túl lassú? Állíts rajta itt, aztán írd be ugyanezt a játékban is.', lockFail: 'A böngésző még nem rögzítette az egeret. Nyomd meg még egyszer az Újrakezdést.', compat: c => 'Kompatibilis mód: ' + (c ? 'BE' : 'KI'), compatNote: 'Nem fordul a nézet, vagy furcsa az egér? Kapcsold be a kompatibilis módot: egyszerű egérbemenet és egyszerű rajzolás.', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
   rawNote: '   (a nyers egérjel nem elérhető, ezért kapcsold ki a Windows egérbeállításaiban a mutatópontosság növelését)',
   tiers: ['Kezdő', 'Középhaladó', 'Haladó', 'Szent', 'Király', 'Császár', 'Isten'], tier: t => 'Rang: ' + t,
   tierNote: 'A rangod a legjobb Rangtesztedből jön, valódi játékosokhoz mérve. Az Isten profi e-sport szint (nagyjából a legjobb 0,5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
@@ -226,6 +226,10 @@ function intro() {
   <p class="dim">${L.sensNote}</p>
   ${P && P.cleared ? `<button id="go" onclick="enter('map')">${L.cont}</button>` : ''}<button ${P && P.cleared ? 'class="alt"' : 'id="go"'} onclick="enter('find')">${L.find}</button><button class="alt" onclick="enter('train')">${L.have}</button><button class="alt" onclick="localStorage.ego_lang='${LANG === 'hu' ? 'en' : 'hu'}';location.reload()">${L.lang}</button>`);
 }
+const sensFmt = v => v < 1 ? v.toFixed(3) : v.toFixed(2), NB = 'style="padding:4px 11px;margin:0 3px;font-size:14px;min-width:0"';
+function sensRow(P) { return `<p>${L.sensAdj(GAMES[GAME][0])}: <button class="alt" ${NB} onclick="nudge(0.95)">-5%</button><button class="alt" ${NB} onclick="nudge(0.99)">-1%</button>
+  <b id="sv" style="font-size:18px;margin:0 8px">${sensFmt(P.sens)}</b><button class="alt" ${NB} onclick="nudge(1.01)">+1%</button><button class="alt" ${NB} onclick="nudge(1.05)">+5%</button></p><p class="dim">${L.sensTip}</p>`; }
+function nudge(f) { const P = me(); P.sens = +(P.sens * f).toFixed(4); save(); document.getElementById('sv').textContent = sensFmt(P.sens); snd(f > 1 ? 880 : 660, 0.06); }
 function pickGame(j) { const v = +document.getElementById('sens').value.replace(',', '.'), old = YAW; GAME = +j; YAW = GAMES[GAME][1]; localStorage.ego_game = GAME;
   document.getElementById('sens').value = v > 0 ? (v * old / YAW).toFixed(2) : defSens();
   for (const n in DB) { DB[n].sens *= old / YAW; (DB[n].sel || []).forEach(x => x.sens *= old / YAW); } save(); }
@@ -249,7 +253,7 @@ function map() {
   const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
   const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
-  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(rankOf(P.cleared))}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>
+  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank">${L.rank(rankOf(P.cleared))}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
   <div class="grid">${tiles}</div>
   <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
