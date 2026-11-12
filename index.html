@@ -85,7 +85,7 @@ en: {
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} on target`, combo: c => `COMBO x${c}`, lives: 'Lives',
   paused: 'Paused', restart: 'Restart', srcBtn: 'Data sources', pf: {hz: 'Mouse', na: 'needs raw input', lag: 'Input to frame', setup: 'Your setup, measured during this test', note: 'Only the monitor’s own delay is not included.'}, sensAdj: g => 'Your ' + g + ' sensitivity', sensTip: 'Too fast or too slow? Nudge it here, then set the same number in your game.', lockFail: 'The browser did not lock the mouse yet. Press Restart once more.', compat: c => 'Compatibility mode: ' + (c ? 'ON' : 'OFF'), compatNote: 'View will not turn, or the mouse feels wrong? Turn compatibility mode on: plain mouse input and plain drawing.', sound: m => m ? 'Sound: off' : 'Sound: on', again: 'Find my sensitivity again', home: 'Home',
   rawNote: '   (raw input not available, so turn off "Enhance pointer precision" in Windows)',
-  tiers: ['Beginner', 'Intermediate', 'Advanced', 'Saint', 'King', 'Emperor', 'God'], tier: t => 'Rank: ' + t,
+  tiers: ['Beginner', 'Intermediate', 'Advanced', 'Saint', 'King', 'Emperor', 'God'], tier: t => 'Rank: ' + t + ' Level',
   tierNote: 'Your rank comes from your best King Trials run, measured against real players. God is pro esports level (about the top 0.5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
   lang: 'Magyar',
   rt: 'King Trials', rtGo: 'King Trials', rtSub: 'The King Trials: 5 reaction clicks, 20 flicks and 20 seconds of tracking, each compared with real players. God is pro esports level, about the top 0.5%. Your best test counts.',
@@ -95,7 +95,7 @@ en: {
   share: 'Challenge friends', copied: 'Copied. Paste it to your friends.', pts: p => p + ' pts',
   shareTxt: (t, p, st, link) => `I am ${t} in North God Aim with ${p} points and ${st} stars. Beat me: ${link}`,
   board: 'Friends board', you: 'you', chal: (n, t, p) => `<b>${n}</b> challenges you: ${t}, ${p} points. Clear stages to beat them.`,
-  bHead: ['Player', 'Rank', 'Points', 'Stars', 'Stages'], top: 'Top 10, all players', pw: 'Password', pwNote: 'Your profile is saved online: the same name and password bring it back on any PC. Use a password only for this game.', offline: 'The server could not be reached, so this session is saved on this PC only.', errs: {'wrong password': 'Wrong password for that name. New here? Pick another name.', locked: 'Too many wrong passwords. That name is locked for an hour.', 'slow down': 'Wait two seconds, then press again.', 'name or password': 'Type a name and a password of at least 4 characters.'},
+  bHead: ['Player', 'Rank', 'Points', 'Stars', 'Stages'], top: 'All players', pw: 'Password', pwNote: 'Your profile is saved online: the same name and password bring it back on any PC. Use a password only for this game.', offline: 'The server could not be reached, so this session is saved on this PC only.', errs: {'wrong password': 'Wrong password for that name. New here? Pick another name.', locked: 'Too many wrong passwords. That name is locked for an hour.', 'slow down': 'Wait two seconds, then press again.', 'name or password': 'Type a name and a password of at least 4 characters.'},
 },
 hu: {
   sub: 'Célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig az utolsó próbáig.',
@@ -125,7 +125,7 @@ hu: {
   hudHits: (h, n) => `${h}/${n}`, hudOn: x => `${pct(x)} a célon`, combo: c => `KOMBÓ x${c}`, lives: 'Életek',
   paused: 'Szünet', restart: 'Újrakezdés', srcBtn: 'Adatforrások', pf: {hz: 'Egér', na: 'nyers bemenet kell hozzá', lag: 'Bemenettől képkockáig', setup: 'A géped, a teszt közben mérve', note: 'Csak a monitor saját késése nincs benne.'}, sensAdj: g => g + ' érzékenységed', sensTip: 'Túl gyors vagy túl lassú? Állíts rajta itt, aztán írd be ugyanezt a játékban is.', lockFail: 'A böngésző még nem rögzítette az egeret. Nyomd meg még egyszer az Újrakezdést.', compat: c => 'Kompatibilis mód: ' + (c ? 'BE' : 'KI'), compatNote: 'Nem fordul a nézet, vagy furcsa az egér? Kapcsold be a kompatibilis módot: egyszerű egérbemenet és egyszerű rajzolás.', sound: m => m ? 'Hang: ki' : 'Hang: be', again: 'Érzékenység újrakeresése', home: 'Főoldal',
   rawNote: '   (a nyers egérjel nem elérhető, ezért kapcsold ki a Windows egérbeállításaiban a mutatópontosság növelését)',
-  tiers: ['Kezdő', 'Középhaladó', 'Haladó', 'Szent', 'Király', 'Császár', 'Isten'], tier: t => 'Rang: ' + t,
+  tiers: ['Kezdő', 'Középhaladó', 'Haladó', 'Szent', 'Király', 'Császár', 'Isten'], tier: t => 'Rang: ' + t + ' szint',
   tierNote: 'A rangod a legjobb Rangtesztedből jön, valódi játékosokhoz mérve. Az Isten profi e-sport szint (nagyjából a legjobb 0,5%).', tierUp: (a, b) => `${a} &rarr; ${b}`,
   lang: 'English',
   rt: 'Rangteszt', rtGo: 'Rangteszt', rtSub: 'A Rangteszt: 5 reakciókattintás, 20 célravetés és 20 másodperc követés, mindegyik valódi játékosokhoz mérve. Az Isten profi e-sport szint, nagyjából a legjobb 0,5%. A legjobb teszted számít.',
@@ -135,7 +135,7 @@ hu: {
   share: 'Kihívom a barátaimat', copied: 'Kimásolva. Küldd el a barátaidnak.', pts: p => p + ' pont',
   shareTxt: (t, p, st, link) => `${t} vagyok a North God Aimben, ${p} ponttal és ${st} csillaggal. Győzz le: ${link}`,
   board: 'Baráti ranglista', you: 'te', chal: (n, t, p) => `<b>${n}</b> kihív téged: ${t}, ${p} pont. Teljesíts szinteket, hogy legyőzd.`,
-  bHead: ['Játékos', 'Rang', 'Pont', 'Csillag', 'Szint'], top: 'Top 10, minden játékos', pw: 'Jelszó', pwNote: 'A profilod online mentődik: ugyanazzal a névvel és jelszóval bármelyik gépen visszakapod. Csak ehhez a játékhoz használt jelszót adj meg.', offline: 'A szerver nem érhető el, ezért ez a játék csak ezen a gépen mentődik.', errs: {'wrong password': 'Rossz jelszó ehhez a névhez. Új vagy? Válassz másik nevet.', locked: 'Túl sok rossz jelszó. Ez a név egy órára zárolva.', 'slow down': 'Várj két másodpercet, aztán nyomd meg újra.', 'name or password': 'Írj be egy nevet és legalább 4 karakteres jelszót.'},
+  bHead: ['Játékos', 'Rang', 'Pont', 'Csillag', 'Szint'], top: 'Minden játékos', pw: 'Jelszó', pwNote: 'A profilod online mentődik: ugyanazzal a névvel és jelszóval bármelyik gépen visszakapod. Csak ehhez a játékhoz használt jelszót adj meg.', offline: 'A szerver nem érhető el, ezért ez a játék csak ezen a gépen mentődik.', errs: {'wrong password': 'Rossz jelszó ehhez a névhez. Új vagy? Válassz másik nevet.', locked: 'Túl sok rossz jelszó. Ez a név egy órára zárolva.', 'slow down': 'Várj két másodpercet, aztán nyomd meg újra.', 'name or password': 'Írj be egy nevet és legalább 4 karakteres jelszót.'},
 }};
 const L = TX[LANG];
 
