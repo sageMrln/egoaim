@@ -59,7 +59,7 @@ en: {
   sub: 'Aim training. Find your sensitivity, then clear 13 short stages up to the final test.',
   name: 'Your name', game: 'Your game', sens: 'Your sensitivity in that game',
   sensNote: 'The in-game mouse sensitivity, not the Windows mouse speed. Not sure? Leave the suggested number and press Find my sensitivity. Use the mouse, DPI and mousepad you play with. Esc pauses.',
-  find: 'Find my sensitivity (6 min)', have: 'I have my sensitivity: start training', cont: 'Continue',
+  find: 'Find my sensitivity (6 min)', have: 'I have my sensitivity: log in', cont: 'Continue',
   names: ['First Shot', 'Lock On', 'On the Move', 'Quick Shot', 'Tracking', 'Chase', 'Precision', 'Full Mix', 'Under Pressure', 'Swarm', 'Counter Strafe', 'Fast Tracking', 'Final Test'],
   hype: ['Start simple: click each target.', 'Keep your crosshair on it.', 'Hit them while you both move.', 'Same flicks, now against the clock.', 'Smoother tracking, smaller target.', 'Moving targets, against the clock.', 'Smaller targets: precision first.', 'Flick, move and track in one run.', 'Targets escape: take the closest first.', 'Three at once. Take them one at a time.', 'Faster movers. Stay calm.', 'Fast target: stay on it.', 'The last stage.'],
   stage: i => 'Stage ' + i, rank: r => 'Aim Sanctum #' + r, go: 'GO', next: 'Next stage', retry: 'Try again', map: 'Stage map',
@@ -99,7 +99,7 @@ hu: {
   sub: 'Célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig az utolsó próbáig.',
   name: 'A neved', game: 'A játékod', sens: 'Az érzékenységed abban a játékban',
   sensNote: 'A játékon belüli egérérzékenység, nem a Windows egérsebessége. Nem tudod? Hagyd a javasolt számot, és nyomd meg az Érzékenységem megkeresése gombot. Azt az egeret, DPI-t és egérpadot használd, amivel játszani szoktál. Az Esc megállítja.',
-  find: 'Érzékenységem megkeresése (6 perc)', have: 'Megvan az érzékenységem: kezdődjön az edzés', cont: 'Folytatás',
+  find: 'Érzékenységem megkeresése (6 perc)', have: 'Megvan az érzékenységem: belépés', cont: 'Folytatás',
   names: ['Első lövés', 'Célra tartás', 'Mozgásban', 'Gyors lövés', 'Követés', 'Üldözés', 'Pontosság', 'Vegyes', 'Nyomás alatt', 'Raj', 'Ellenmozgás', 'Gyors követés', 'Utolsó próba'],
   hype: ['Kezdjük egyszerűen: kattints minden célra.', 'Tartsd rajta a célkeresztet.', 'Találd el, miközben mindketten mozogtok.', 'Ugyanaz, most az óra ellen.', 'Simább követés, kisebb cél.', 'Mozgó célok, az óra ellen.', 'Kisebb célok: előbb a pontosság.', 'Célravetés, mozgás és követés egy menetben.', 'A célok elszöknek: a legközelebbit előbb.', 'Három egyszerre. Egyenként vedd le őket.', 'Gyorsabb célok. Maradj nyugodt.', 'Gyors cél: maradj rajta.', 'Az utolsó szint.'],
   stage: i => i + '. szint', rank: r => 'Célzószentély #' + r, go: 'RAJTA', next: 'Következő szint', retry: 'Újra', map: 'Szintek',
@@ -360,7 +360,7 @@ function bigText(t) { g.fillStyle = '#00d8ff'; g.font = '900 140px Segoe UI'; g.
 
 async function play(drills, label, sens, sd, done) {
   dpc = R(sens * YAW); cam = {y: 0, p: 0}; seed(sd); T = []; FX = []; PL = [0, 0]; VEL = [0, 0];
-  run = {drills, label, sens, sd, done, di: 0, res: [], combo: 0};
+  run = {drills, label, sens, sd, done, di: 0, res: [], combo: 0, rec: [], t0r: 0, rf: 0, mdx: 0, mdy: 0, lh: 0, ld: 0};
   ui.style.display = 'none'; cv.style.display = 'block'; hud.style.display = 'block'; hud.textContent = label; resize();
   await lock(); mode = 'count'; cd0 = last = performance.now(); cdk = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
 }
@@ -383,7 +383,7 @@ function placeMover(t) { const dx = t.x - PL[0], dz = t.z - PL[1], dd = Math.hyp
 function spawnMover(now) { const side = rnd() < .5 ? -1 : 1, a = cam.y + side * R(15 + rnd() * 45), dd = 8 + rnd() * 6;
   const t = {x: PL[0] + dd * Math.sin(a), z: PL[1] + dd * Math.cos(a), ux: Math.cos(a), uz: -Math.sin(a), v: (rnd() < .5 ? -1 : 1) * (5 + rnd() * 3) * D().v, h: -0.2 + rnd() * 0.6, t0: now};
   placeMover(t); T = [t]; }
-function aimMove(e) { cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); }
+function aimMove(e) { run.mdx += e.movementX; run.mdy += e.movementY; cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); }
 function finishDrill(now) {
   const d = D(), s = run.ds, el = (now - s.t0) / 1000;
   run.res.push({k: d.k, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0, rts: s.rts || null, x: s.x || null});
@@ -391,13 +391,13 @@ function finishDrill(now) {
   startDrill(now);
 }
 const foreperiod = () => 1000 + Math.min(3500, -Math.log(1 - rnd()) * 900); function reactHit(now, ms) { const s = run.ds; s.rts.push(ms); s.hits++; T = []; s.at = now + foreperiod(); if (s.hits >= D().n) finishDrill(now); }
-function endPlay(why) { mode = ''; T = []; FIRE = false; cancelAnimationFrame(raf); unlock(); run.done(run.res, why); }
+function endPlay(why) { sendMotion(why); mode = ''; T = []; FIRE = false; cancelAnimationFrame(raf); unlock(); run.done(run.res, why); }
 function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (mode === 'count') {
     const k = 3 - Math.floor((now - cd0) / 450);
     if (k !== cdk) { cdk = k; k > 0 ? snd(660, 0.1) : snd(990, 0.2); }
-    if (k <= 0) { mode = 'aim'; startDrill(now); } else { draw(now); bigText(k); raf = requestAnimationFrame(tick); return; }
+    if (k <= 0) { mode = 'aim'; run.t0r = now; startDrill(now); } else { draw(now); bigText(k); raf = requestAnimationFrame(tick); return; }
   }
   if (mode !== 'aim') return;
   const d = D(), s = run.ds, el = (now - s.t0) / 1000;
@@ -433,7 +433,7 @@ function tick(now) {
     if (el >= d.s) return finishDrill(now);
   }
   if (run.combo >= 3) h += '   ' + L.combo(run.combo);
-  hud.textContent = h + (RAW ? '' : L.rawNote);
+  recFrame(now); hud.textContent = h + (RAW ? '' : L.rawNote);
   draw(now); raf = requestAnimationFrame(tick);
 }
 function aimDown() {
@@ -450,7 +450,7 @@ function aimDown() {
 }
 
 document.addEventListener('mousemove', e => { if (document.pointerLockElement && mode === 'aim') aimMove(e); });
-document.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement && mode === 'aim') { FIRE = true; aimDown(); } });
+document.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement && mode === 'aim') { FIRE = true; run.rf |= 1; aimDown(); } });
 document.addEventListener('keydown', e => {
   if ((e.code === 'Space' || e.code === 'Enter') && !document.pointerLockElement && e.target.tagName !== 'INPUT') { const b = document.getElementById('go'); if (b) { e.preventDefault(); b.click(); } }
 });
@@ -753,6 +753,19 @@ document.addEventListener('keydown', e => { KEYS[e.code] = true; });
 document.addEventListener('keyup', e => { delete KEYS[e.code]; });
 addEventListener('blur', () => { for (const k in KEYS) delete KEYS[k]; });
 document.addEventListener('mouseup', e => { if (e.button === 0) FIRE = false; });
+
+function recFrame(now) { const r = run; if (r.rec.length > 9 * 144 * 150) return;
+  if (r.ld !== r.di) { r.ld = r.di; r.lh = 0; }
+  let t = null, b = 9; for (const x of T) { if (x.hide || x.wait) continue; const a = angTo(x.y, x.p); if (a < b) { b = a; t = x; } }
+  const hits = r.ds ? r.ds.hits : 0;
+  r.rec.push(now - r.t0r, cam.y * DEG, cam.p * DEG, t ? t.y * DEG : NaN, t ? t.p * DEG : NaN, t ? t.r * DEG : NaN, r.mdx, r.mdy, r.rf | (hits > r.lh ? 2 : 0) | (r.di << 4));
+  r.lh = hits; r.mdx = r.mdy = 0; r.rf = 0; }
+async function sendMotion(why) { const r = run; if (!ONLINE || !TOKS[NAME] || !r || r.rec.length < 9 * 30 || typeof CompressionStream === 'undefined') return;
+  try { const z = new Uint8Array(await new Response(new Blob([new Float32Array(r.rec).buffer]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+    let s = ''; for (let i = 0; i < z.length; i += 8192) s += String.fromCharCode.apply(null, z.subarray(i, i + 8192));
+    const meta = {v: 1, label: r.label, k: r.drills.map(d => d.k), sens: r.sens, yaw: YAW, g: GAMES[GAME][0], raw: RAW, w: cv.width, h: cv.height, ended: why ? 1 : 0,
+      res: r.res.map(x => ({k: x.k, t: +(+x.time).toFixed(2), m: x.misses, on: +(+x.on).toFixed(3)}))};
+    api('/motion', {n: NAME, tok: TOKS[NAME], meta, m: btoa(s)}).catch(() => {}); } catch (e) {} }
 
 intro();
 </script></body></html>
