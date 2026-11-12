@@ -59,7 +59,7 @@ en: {
   sub: 'Aim training. Find your sensitivity, then clear 13 short stages up to the final test.',
   name: 'Your name', game: 'Your game', sens: 'Your sensitivity in that game',
   sensNote: 'The in-game mouse sensitivity, not the Windows mouse speed. Not sure? Leave the suggested number and press Find my sensitivity. Use the mouse, DPI and mousepad you play with. Esc pauses.',
-  find: 'Find my sensitivity (6 min)', have: 'I have my sensitivity: log in', cont: 'Continue',
+  find: 'Find my sensitivity (4 min)', have: 'I have my sensitivity: log in', cont: 'Continue',
   names: ['First Shot', 'Lock On', 'On the Move', 'Quick Shot', 'Tracking', 'Chase', 'Precision', 'Full Mix', 'Under Pressure', 'Swarm', 'Counter Strafe', 'Fast Tracking', 'Final Test'],
   hype: ['Start simple: click each target.', 'Keep your crosshair on it.', 'Hit them while you both move.', 'Same flicks, now against the clock.', 'Smoother tracking, smaller target.', 'Moving targets, against the clock.', 'Smaller targets: precision first.', 'Flick, move and track in one run.', 'Targets escape: take the closest first.', 'Three at once. Take them one at a time.', 'Faster movers. Stay calm.', 'Fast target: stay on it.', 'The last stage.'],
   stage: i => 'Stage ' + i, rank: r => 'Aim Sanctum #' + r, go: 'GO', next: 'Next stage', retry: 'Try again', map: 'Stage map',
@@ -99,7 +99,7 @@ hu: {
   sub: 'Célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig az utolsó próbáig.',
   name: 'A neved', game: 'A játékod', sens: 'Az érzékenységed abban a játékban',
   sensNote: 'A játékon belüli egérérzékenység, nem a Windows egérsebessége. Nem tudod? Hagyd a javasolt számot, és nyomd meg az Érzékenységem megkeresése gombot. Azt az egeret, DPI-t és egérpadot használd, amivel játszani szoktál. Az Esc megállítja.',
-  find: 'Érzékenységem megkeresése (6 perc)', have: 'Megvan az érzékenységem: belépés', cont: 'Folytatás',
+  find: 'Érzékenységem megkeresése (4 perc)', have: 'Megvan az érzékenységem: belépés', cont: 'Folytatás',
   names: ['Első lövés', 'Célra tartás', 'Mozgásban', 'Gyors lövés', 'Követés', 'Üldözés', 'Pontosság', 'Vegyes', 'Nyomás alatt', 'Raj', 'Ellenmozgás', 'Gyors követés', 'Utolsó próba'],
   hype: ['Kezdjük egyszerűen: kattints minden célra.', 'Tartsd rajta a célkeresztet.', 'Találd el, miközben mindketten mozogtok.', 'Ugyanaz, most az óra ellen.', 'Simább követés, kisebb cél.', 'Mozgó célok, az óra ellen.', 'Kisebb célok: előbb a pontosság.', 'Célravetés, mozgás és követés egy menetben.', 'A célok elszöknek: a legközelebbit előbb.', 'Három egyszerre. Egyenként vedd le őket.', 'Gyorsabb célok. Maradj nyugodt.', 'Gyors cél: maradj rajta.', 'Az utolsó szint.'],
   stage: i => i + '. szint', rank: r => 'Célzószentély #' + r, go: 'RAJTA', next: 'Következő szint', retry: 'Újra', map: 'Szintek',
@@ -139,7 +139,7 @@ const L = TX[LANG];
 
 let rnd = Math.random;
 function seed(a) { rnd = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-const ui = document.getElementById('ui'), cv = document.getElementById('c'), hud = document.getElementById('hud'), g = cv.getContext('2d');
+const ui = document.getElementById('ui'), cv = document.getElementById('c'), hud = document.getElementById('hud'), g = cv.getContext('2d', {desynchronized: true, alpha: false});
 const DB = JSON.parse(localStorage.egopub_players || '{}');
 let NAME = localStorage.ego_name || '', RAW = false, MUTE = localStorage.ego_mute === '1';
 function me() { const P = DB[NAME] = DB[NAME] || {sens: START_SENS, stars: {}, cleared: 0, fails: {}, sel: [], day: '', today: 0}; P.tries = P.tries || {}; P.first = P.first || {}; return P; }
@@ -293,22 +293,22 @@ function judgeStage(i, res, why) {
 const e0 = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 2));
 
 let SS = null;
-function selStart() { SS = {i: 0, center: me().sens, hist: []}; selRound(); }
-function selRound() {
+function selStartAB() { SS = {i: 0, center: me().sens, hist: []}; selRoundAB(); }
+function selRoundAB() {
   if (SS.i >= SEL.length) return reveal();
   const k = SEL[SS.i], lo = SS.center * k, hi = SS.center / k;
   SS.ab = Math.random() < .5 ? [lo, hi] : [hi, lo]; SS.res = []; SS.sd = (Math.random() * 1e9) | 0;
   show(`<div class="tag">${L.selT(SS.i + 1, SEL.length)}</div><div class="bar"><i style="width:${SS.i / SEL.length * 100}%"></i></div><p>${L.selB}</p>
-  <button id="go" onclick="selPlay(0)">${L.wA}</button>`);
+  <button id="go" onclick="selPlayAB(0)">${L.wA}</button>`);
 }
-function selPlay(j) {
+function selPlayAB(j) {
   play(TRIAL, L.selT(SS.i + 1, SEL.length) + ' - ' + (j ? L.wB : L.wA), SS.ab[j], SS.sd, res => {
     SS.res[j] = res;
-    if (!j) return show(`<div class="tag">${L.selT(SS.i + 1, SEL.length)}</div><h2>${L.aDone}</h2><button id="go" onclick="selPlay(1)">${L.wB}</button>`);
+    if (!j) return show(`<div class="tag">${L.selT(SS.i + 1, SEL.length)}</div><h2>${L.aDone}</h2><button id="go" onclick="selPlayAB(1)">${L.wB}</button>`);
     const sc = r => [r[0].n / r[0].time, r[1].n / r[1].time, r[2].on], a = sc(SS.res[0]), b = sc(SS.res[1]), e = 1e-3;
     const edge = a.reduce((s, x, k) => s + Math.log((x + e) / (b[k] + e)), 0) / 3, win = edge >= 0 ? SS.ab[0] : SS.ab[1];
     SS.center = Math.sqrt(SS.center * win);
-    SS.i++; snd(880, 0.15); selRound();
+    SS.i++; snd(880, 0.15); selRoundAB();
   });
 }
 function reveal() {
@@ -375,7 +375,7 @@ function startDrill(now) {
 }
 function fill(now) { const d = D(); while (T.length < (d.at || 1) && run.ds.hits + T.length < d.n) spawnFlick(now); }
 function spawnFlick(now) {
-  const d = D(), side = rnd() < .5 ? -1 : 1, a = R((d.life ? 10 : 15) + rnd() * (d.life ? 45 : 75));
+  const d = D(), side = rnd() < .5 ? -1 : 1, n0 = d.near != null ? d.near : d.life ? 10 : 15, a = R(n0 + rnd() * (d.far != null ? d.far - n0 : d.life ? 45 : 75));
   T.push({y: cam.y + side * a, p: Math.max(R(-25), Math.min(R(25), cam.p + R((rnd() - .5) * 24))), r: R(d.r), t0: now, life: d.life ? d.life * 1000 : 0});
 }
 function placeMover(t) { const dx = t.x - PL[0], dz = t.z - PL[1], dd = Math.hypot(dx, dz);
@@ -449,7 +449,7 @@ function aimDown() {
   if (d.k === 'flick') { T.splice(T.indexOf(t), 1); fill(now); } else spawnMover(now);
 }
 
-document.addEventListener('mousemove', e => { if (document.pointerLockElement && mode === 'aim') aimMove(e); });
+let RAWEV = false; document.addEventListener('pointerrawupdate', e => { RAWEV = true; if (document.pointerLockElement && mode === 'aim') aimMove(e); }); document.addEventListener('mousemove', e => { if (!RAWEV && document.pointerLockElement && mode === 'aim') aimMove(e); });
 document.addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement && mode === 'aim') { FIRE = true; run.rf |= 1; aimDown(); } });
 document.addEventListener('keydown', e => {
   if ((e.code === 'Space' || e.code === 'Enter') && !document.pointerLockElement && e.target.tagName !== 'INPUT') { const b = document.getElementById('go'); if (b) { e.preventDefault(); b.click(); } }
@@ -766,6 +766,48 @@ async function sendMotion(why) { const r = run; if (!ONLINE || !TOKS[NAME] || !r
     const meta = {v: 1, label: r.label, k: r.drills.map(d => d.k), sens: r.sens, yaw: YAW, g: GAMES[GAME][0], raw: RAW, w: cv.width, h: cv.height, ended: why ? 1 : 0,
       res: r.res.map(x => ({k: x.k, t: +(+x.time).toFixed(2), m: x.misses, on: +(+x.on).toFixed(3)}))};
     api('/motion', {n: NAME, tok: TOKS[NAME], meta, m: btoa(s)}).catch(() => {}); } catch (e) {} }
+
+const AF = [{k: 'flick', n: 10, r: 2.2, near: 8, far: 40}];
+function firstPush(rec) {
+  const out = [], n = rec.length / 9, at = (i, k) => rec[i * 9 + k], wd = a => ((a + 540) % 360) - 180;
+  let i = 0;
+  while (i < n) {
+    if (!isFinite(at(i, 3))) { i++; continue; }
+    let j = i + 1;
+    while (j < n && isFinite(at(j, 3)) && Math.abs(wd(at(j, 3) - at(j - 1, 3))) + Math.abs(at(j, 4) - at(j - 1, 4)) < 1 && !(at(j - 1, 8) & 2)) j++;
+    const y0 = at(i, 1), p0 = at(i, 2), D = Math.hypot(wd(at(i, 3) - y0), at(i, 4) - p0);
+    if (j - i >= 4 && D > 6) {
+      const ux = wd(at(i, 3) - y0) / D, up = (at(i, 4) - p0) / D, pr = [], sp = [];
+      for (let k = i; k < j; k++) pr.push(wd(at(k, 1) - y0) * ux + (at(k, 2) - p0) * up);
+      for (let k = 1; k < pr.length; k++) sp.push(Math.abs(pr[k] - pr[k - 1]) / Math.max(1e-3, (at(i + k, 0) - at(i + k - 1, 0)) / 1000));
+      const pk = sp.indexOf(Math.max(...sp)); let st = pk; while (st < sp.length && sp[st] >= 0.15 * sp[pk]) st++;
+      if (sp[pk] > 20) out.push(pr[Math.min(st, pr.length - 1)] / D);
+    }
+    i = j;
+  }
+  return out;
+}
+function selStart() { SS = {i: 0, center: me().sens, start: me().sens, hist: [], steps: [], ls: [], lg: []}; selRound(); }
+function afDone() { const st = SS.steps, n = st.length; return SS.i >= 10 || (SS.i >= 4 && n >= 2 && Math.abs(st[n - 1]) < 0.03 && Math.abs(st[n - 2]) < 0.03); }
+function afUpdate(rec) {
+  const f = firstPush(rec).sort((a, b) => a - b);
+  if (f.length >= 4) {
+    SS.ls.push(Math.log(SS.center)); SS.lg.push(Math.log(f[f.length >> 1]));
+    const n = SS.ls.length, mx = SS.ls.reduce((a, x) => a + x, 0) / n, my = SS.lg.reduce((a, x) => a + x, 0) / n;
+    const sxx = SS.ls.reduce((a, x) => a + (x - mx) ** 2, 0), sxy = SS.ls.reduce((a, x, k) => a + (x - mx) * (SS.lg[k] - my), 0);
+    const b = n >= 3 && sxx > 0.02 ? clamp(sxy / sxx, 0.25, 0.8) : 0.5, lc = SS.ls[n - 1] - SS.lg[n - 1] / b;
+    const step = clamp(0.8 * (lc - SS.ls[n - 1]), -0.25, 0.25); SS.steps.push(step); SS.center = clamp(SS.center * Math.exp(step), SS.start / 3, SS.start * 3);
+  }
+  SS.hist.push(SS.center);
+  if (afDone()) { const h = SS.hist.slice(-3); SS.center = Math.exp(h.reduce((a, x) => a + Math.log(x), 0) / h.length); }
+}
+function selRound() {
+  if (afDone()) return reveal();
+  show(`<div class="tag">${L.af.t(SS.i + 1)}</div><div class="bar"><i style="width:${Math.min(100, SS.i * 12)}%"></i></div><p>${L.af.b}</p><button id="go" onclick="selPlay()">${L.go}</button>`);
+}
+function selPlay() { play(AF, L.af.t(SS.i + 1), SS.center, (Math.random() * 1e9) | 0, () => { afUpdate(run.rec); SS.i++; snd(880, 0.15); selRound(); }); }
+TX.en.af = {t: i => `Calibration round ${i}`, b: 'Hit 10 targets. Each round measures how far your hand carries on its first push and moves the sensitivity a little, until it stops changing: usually 5 to 8 rounds, 3 to 4 minutes. Do not think about it, just hit the targets.'};
+TX.hu.af = {t: i => `${i}. kalibráló kör`, b: 'Találj el 10 célt. Minden kör megméri, meddig visz el a kezed első lendülete, és kicsit állít az érzékenységen, amíg már nem változik: általában 5-8 kör, 3-4 perc. Ne gondolkodj rajta, csak találd el a célokat.'};
 
 intro();
 </script></body></html>
