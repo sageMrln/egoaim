@@ -90,7 +90,7 @@ en: {
   lang: 'Magyar',
   rt: 'Rank Trials', rtGo: 'Rank Trials', rtSub: 'The Rank Trials: 5 reaction clicks, 20 flicks and 20 seconds of tracking, each compared with real players. God is pro esports level, about the top 0.5%. Your best test counts.',
   rtReact: (h, n) => `REACTION ${h}/${n}: click the moment the target appears`, rtFalse: 'too early',
-  rtRes: (ms, fl, on) => `Reaction ${ms} ms &middot; ${fl} s per flick &middot; ${on} on target`, rtTop: p => `Top ${p} of players`, rtNone: 'No rank yet. Take the Rank Trials.', rtWhy: (a, b, c) => `Reaction: top ${a} of 70,940 Human Benchmark results &middot; Flicks: top ${b} of 78,563 KovaaK's players &middot; Tracking: top ${c} of 105,404 KovaaK's players`, rtSrc: 'See the data sources',
+  rtRes: (ms, fl, on) => `Reaction ${ms} ms &middot; ${fl} s per flick &middot; ${on} on target`, rtTop: p => `Top ${p} of players`, rtNone: 'No rank yet. Take the Rank Trials.', calT: 'Your rank was recalculated', calOk: 'Got it', rtWhy: (a, b, c) => `Reaction: top ${a} of 70,940 Human Benchmark results &middot; Flicks: top ${b} of 78,563 KovaaK's players &middot; Tracking: top ${c} of 105,404 KovaaK's players`, rtSrc: 'See the data sources',
   rtBest: (t, p) => `Your best: ${t}, top ${p}`,
   share: 'Challenge friends', copied: 'Copied. Paste it to your friends.', pts: p => p + ' pts',
   shareTxt: (t, p, st, link) => `I am ${t} in North God Aim with ${p} points and ${st} stars. Beat me: ${link}`,
@@ -130,7 +130,7 @@ hu: {
   lang: 'English',
   rt: 'Rangteszt', rtGo: 'Rangteszt', rtSub: 'A Rangteszt: 5 reakciókattintás, 20 célravetés és 20 másodperc követés, mindegyik valódi játékosokhoz mérve. Az Isten profi e-sport szint, nagyjából a legjobb 0,5%. A legjobb teszted számít.',
   rtReact: (h, n) => `REAKCIÓ ${h}/${n}: kattints, amint megjelenik a cél`, rtFalse: 'túl korán',
-  rtRes: (ms, fl, on) => `Reakció ${ms} ms &middot; ${fl} mp célonként &middot; ${on} a célon`, rtTop: p => `A játékosok legjobb ${p}-a`, rtNone: 'Még nincs rangod. Csináld meg a Rangtesztet.', rtWhy: (a, b, c) => `Reakció: a Human Benchmark 70 940 eredményének legjobb ${a}-a &middot; Célravetés: a KovaaK's 78 563 játékosának legjobb ${b}-a &middot; Követés: a KovaaK's 105 404 játékosának legjobb ${c}-a`, rtSrc: 'Adatforrások',
+  rtRes: (ms, fl, on) => `Reakció ${ms} ms &middot; ${fl} mp célonként &middot; ${on} a célon`, rtTop: p => `A játékosok legjobb ${p}-a`, rtNone: 'Még nincs rangod. Csináld meg a Rangtesztet.', calT: 'Újraszámoltuk a rangodat', calOk: 'Értem', rtWhy: (a, b, c) => `Reakció: a Human Benchmark 70 940 eredményének legjobb ${a}-a &middot; Célravetés: a KovaaK's 78 563 játékosának legjobb ${b}-a &middot; Követés: a KovaaK's 105 404 játékosának legjobb ${c}-a`, rtSrc: 'Adatforrások',
   rtBest: (t, p) => `A legjobbad: ${t}, legjobb ${p}`,
   share: 'Kihívom a barátaimat', copied: 'Kimásolva. Küldd el a barátaidnak.', pts: p => p + ' pont',
   shareTxt: (t, p, st, link) => `${t} vagyok a North God Aimben, ${p} ponttal és ${st} csillaggal. Győzz le: ${link}`,
@@ -257,11 +257,19 @@ function enter(kind) {
     go();
   }, () => { ONLINE = false; alert(L.offline); go(); });
 }
+const CAL = {v: 3, was: {adith: 6, mrln: 4}, why: {en: 'The rank scale was corrected. The current Rank Trials is easier than the first version (every target is on screen), so it was ranking everyone too high. It is now linked to the first version through the players who took both, and every player was re-ranked the same way.', hu: 'A rangskálát kijavítottuk. A mostani Rangteszt könnyebb az első változatnál (minden célpont a képernyőn van), ezért mindenkit túl magasra rangsorolt. Most az első változathoz van igazítva azoknak a játékosoknak az eredményei alapján, akik mindkettőt kitöltötték, és minden játékost ugyanígy újrarangsoroltunk.'}};
+function rankPop(P) { const t = tierOf(P), was = P.seenT != null ? P.seenT : CAL.was[(NAME || '').toLowerCase()], fresh = P.calv !== CAL.v;
+  P.seenT = t; P.calv = CAL.v;
+  if (!fresh || was == null || was === t || t < 0) { if (fresh) save(); return; }
+  save(); const o = document.createElement('div');
+  o.style.cssText = 'position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:50';
+  o.innerHTML = `<div class="card" style="max-width:560px"><div class="tag">${L.calT}</div><div class="rank" style="font-size:24px">${L.tier(L.tierUp(L.tiers[was], L.tiers[t]))}</div><p>${CAL.why[LANG] || CAL.why.en}</p><button id="calok">${L.calOk}</button><button class="alt" onclick="this.closest('div[style]').remove();sources()">${L.srcBtn}</button></div>`;
+  document.body.appendChild(o); o.querySelector('#calok').onclick = () => o.remove(); }
 function map() {
   const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
   const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
-  show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank" id="sanct">${POS ? L.rank(POS) : ''}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
+  rankPop(P); show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank" id="sanct">${POS ? L.rank(POS) : ''}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
   <div class="grid">${tiles}</div>
   <button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button><button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
