@@ -45,7 +45,7 @@ select,input{background:#070b14;color:var(--txt);border:1px solid var(--line);bo
 @media (max-width:760px){.rk7 .r{grid-template-columns:1fr}.rk7 .sh{text-align:left}}
 .dforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:12px 0}.dform{border:1px solid var(--line);border-radius:14px;padding:16px 18px;background:linear-gradient(160deg,#1a2a4a55,transparent 70%)}
 .dform h3{margin:2px 0 6px;font-size:22px;color:var(--acc2)}.dform .ep{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#ffffffa0}.dform p{margin:6px 0}.dme{font-weight:700;margin:8px 0;color:var(--gold)}
-.dpath{margin:6px 0}.dpath .me{color:var(--gold);font-weight:700}.dtop{margin:8px 0;font-size:13px}.dform button{margin-top:8px}
+.dhead{display:flex;gap:14px;align-items:center}.demb{flex:none;filter:drop-shadow(0 0 10px #00d8ff40)}.dpath{margin:6px 0}.dpath .me{color:var(--gold);font-weight:700}.dtop{margin:8px 0;font-size:13px}.dform button{margin-top:8px}
 </style></head><body>
 <canvas id="c3"></canvas><canvas id="c"></canvas><div id="hud"></div><div id="perf"></div><div id="ui"></div>
 <script>
@@ -1179,12 +1179,24 @@ function dMetric(f, pk, r) { if (!r) return null;
   if (pk.m === 'tpt') return r.n ? r.time / r.n : null;
   return r.on; }
 
+// ---- Form emblems (the North Seal): seven notches = the seven ranks, the gold star = the North God ----
+const DEMG = {react: `<path d="M112 46 L78 108 H102 L88 156 L128 88 H104 L120 46Z" fill="url(#ec-F)" stroke="#bff7ff" stroke-width="1.5" stroke-linejoin="round"/><path d="M62 100 H74 M126 100 H138" stroke="#00d8ff" stroke-width="3" stroke-linecap="round" opacity=".7"/>`,
+  flick: `<path d="M58 140 Q66 74 128 66" fill="none" stroke="url(#ec-F)" stroke-width="5" stroke-linecap="round"/><path d="M58 140 Q66 74 128 66" fill="none" stroke="#bff7ff" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 6"/><circle cx="134" cy="66" r="15" fill="none" stroke="url(#eg-F)" stroke-width="3"/><circle cx="134" cy="66" r="4" fill="url(#eg-F)"/><path d="M134 44 V54 M134 78 V88 M112 66 H122 M146 66 H156" stroke="url(#eg-F)" stroke-width="3" stroke-linecap="round"/>`,
+  trace: `<circle cx="100" cy="100" r="44" fill="none" stroke="#1c3a66" stroke-width="2"/><path d="M56 100 C70 70 84 70 100 100 S130 130 144 100" fill="none" stroke="url(#ec-F)" stroke-width="5" stroke-linecap="round"/><circle cx="100" cy="100" r="9" fill="none" stroke="url(#eg-F)" stroke-width="3"/><circle cx="100" cy="100" r="3" fill="url(#eg-F)"/>`};
+const demblem = (f, px) => `<svg class="demb" width="${px}" height="${px}" viewBox="0 0 200 200" aria-hidden="true"><defs>
+  <linearGradient id="ec-F" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cf0ff"/><stop offset="1" stop-color="#1f8cff"/></linearGradient>
+  <linearGradient id="eg-F" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#e09a12"/></linearGradient></defs>
+  <circle cx="100" cy="100" r="86" fill="#08101e" stroke="url(#ec-F)" stroke-width="3"/><circle cx="100" cy="100" r="74" fill="none" stroke="#1c3a66" stroke-width="1.5"/>
+  <circle cx="100" cy="100" r="80" fill="none" stroke="#00d8ff" stroke-width="1" stroke-dasharray="2 9" opacity=".55"/>
+  <g fill="url(#ec-F)">${[1, 2, 3, 4, 5, 6].map(i => `<rect x="98" y="10" width="4" height="12" transform="rotate(${(i * 360 / 7).toFixed(2)} 100 100)"/>`).join('')}</g>
+  <path d="M100 2 L105 14 L117 18 L105 22 L100 34 L95 22 L83 18 L95 14Z" fill="url(#eg-F)"/>${DEMG[f]}</svg>`.replace(/-F\b/g, '-' + f);
+
 // ---- Lobby ----
 let DTOP = null;
 function duels() { const X = DX(), P = me();
   const card = f => { const R = formRank(P, f), s = nfOf(P, f), god = dLine(f, DZT[5]);
     const path = L.tiers.map((x, i) => `<span class="${R.t === i ? 'me' : ''}">${x}${i ? ' ' + X.unit[f](dLine(f, DZT[i - 1])) : ''}</span>`).join(' &middot; ');
-    return `<div class="dform"><div class="ep">${X.ep[f]}</div><h3>${X.f[f]}</h3><p>${X.why[f]}</p><p class="dim">${X.god[f](god)}</p>
+    return `<div class="dform"><div class="dhead">${demblem(f, 64)}<div><div class="ep">${X.ep[f]}</div><h3>${X.f[f]}</h3></div></div><p>${X.why[f]}</p><p class="dim">${X.god[f](god)}</p>
       <div class="dme">${R.need ? X.unr(R.need) : X.fp(R.fp, L.tiers[R.t], topTxt(R.top))} &middot; ${X.rec(s.w, s.l)}</div>
       <div class="dim dpath">${X.path}: ${path}</div>
       <div class="dim">${X.games}: ${X.g[f].map((g, i) => `<b>${g}</b> ${X.gd[f][i]}`).join(' ')}</div>
@@ -1221,7 +1233,7 @@ function duelMsg(o) { const X = DX();
   else if (o.t === 'opp') DUEL.opp = o.name;
   else if (o.t === 'full') { duelClose(); show(`<p>${X.full}</p><button id="go" onclick="duels()">${X.lobby}</button>`); }
   else if (o.t === 'go') { Object.assign(DUEL, {go: o, form: o.form, opp: o.names[1 - DUEL.k], rd: {}, hp: [100, 100], sum: null, again: false, oppAgain: false, left: false, prog: 0, fx: {}});
-    show(`<div class="tag">${X.f[o.form]}</div><div class="rank" style="font-size:40px">${X.vs(esc(o.names[DUEL.k]), esc(DUEL.opp))}</div><p>${X.ready}</p><button id="go" onclick="duelFight()">${X.fight}</button>`); }
+    show(`${demblem(o.form, 110)}<div class="tag">${X.f[o.form]}</div><div class="rank" style="font-size:40px">${X.vs(esc(o.names[DUEL.k]), esc(DUEL.opp))}</div><p>${X.ready}</p><button id="go" onclick="duelFight()">${X.fight}</button>`); }
   else if (o.t === 'p') DUEL.prog = o.v;
   else if (o.t === 'hp') DUEL.hp = o.hp;
   else if (o.t === 'atk') { const now = performance.now(); DUEL.fx[o.k] = now + (o.k === 'shake' ? 1500 : 1200); if (run && run.duel) run.flash = {t0: now, s: o.k === 'shake' ? X.shaken : X.smoked, c: '#ff4d5e'}; snd(110, 0.25, 'sawtooth', 0.07); }
