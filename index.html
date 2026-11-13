@@ -104,7 +104,10 @@ en: {
   lang: 'Magyar',
   rt: 'Rank Trials', rtGo: 'Rank Trials', rtSub: 'The Rank Trials: 5 reaction clicks, 20 flicks and 20 seconds of tracking, each compared with real players. God is pro esports level, about the top 0.5%. Your best test counts.',
   rtReact: (h, n) => `REACTION ${h}/${n}: click the moment the target appears`, rtFalse: 'too early',
-  rtRes: (ms, fl, on) => `Reaction ${ms} ms &middot; ${fl} s per flick &middot; ${on} on target`, rtTop: p => `Top ${p} of players`, rtNone: 'No rank yet. Take the Rank Trials.', calT: 'Your rank was recalculated', calOk: 'Got it', rtWhy: (a, b, c) => `Reaction: top ${a} of 70,940 Human Benchmark results &middot; Flicks: top ${b} of 78,563 KovaaK's players &middot; Tracking: top ${c} of 105,404 KovaaK's players`, rtSrc: 'See the data sources',
+  rtRes: (ms, fl, on) => `Reaction ${ms} ms &middot; ${fl} s per flick &middot; ${on} on target`, rtTop: p => `Top ${p} of players`, rtNone: 'No rank yet. Take the Rank Trials.', calT: 'Your rank was recalculated', calOk: 'Got it',
+  ht: {btn: 'My trials', t: 'Your Rank Trials', none: 'No Rank Trials yet.', n: n => `${n} trial${n === 1 ? '' : 's'}`, best: (t, p) => `Best: ${t}, top ${p}`,
+    trend: (a, b) => `Last 10 against first 10: ${a} &rarr; ${b}`, top: 'top', cols: ['When', 'Rank', 'Reaction', 'Flick', 'Tracking', 'Sens', ''],
+    re: 'Rerun', reT: 'Same targets as this run', old: 'no seed', was: (ms, fl, on) => `This run the first time: ${ms} ms &middot; ${fl} s &middot; ${on}`, off: 'Offline: showing the trials saved on this PC.'}, rtWhy: (a, b, c) => `Reaction: top ${a} of 70,940 Human Benchmark results &middot; Flicks: top ${b} of 78,563 KovaaK's players &middot; Tracking: top ${c} of 105,404 KovaaK's players`, rtSrc: 'See the data sources',
   rtBest: (t, p) => `Your best: ${t}, top ${p}`,
   share: 'Challenge friends', copied: 'Copied. Paste it to your friends.', pts: p => p + ' pts',
   shareTxt: (t, p, st, link) => `I am ${t} in North God Aim with ${p} points and ${st} stars. Beat me: ${link}`,
@@ -144,7 +147,10 @@ hu: {
   lang: 'English',
   rt: 'Rangteszt', rtGo: 'Rangteszt', rtSub: 'A Rangteszt: 5 reakciókattintás, 20 célravetés és 20 másodperc követés, mindegyik valódi játékosokhoz mérve. Az Isten profi e-sport szint, nagyjából a legjobb 0,5%. A legjobb teszted számít.',
   rtReact: (h, n) => `REAKCIÓ ${h}/${n}: kattints, amint megjelenik a cél`, rtFalse: 'túl korán',
-  rtRes: (ms, fl, on) => `Reakció ${ms} ms &middot; ${fl} mp célonként &middot; ${on} a célon`, rtTop: p => `A játékosok legjobb ${p}-a`, rtNone: 'Még nincs rangod. Csináld meg a Rangtesztet.', calT: 'Újraszámoltuk a rangodat', calOk: 'Értem', rtWhy: (a, b, c) => `Reakció: a Human Benchmark 70 940 eredményének legjobb ${a}-a &middot; Célravetés: a KovaaK's 78 563 játékosának legjobb ${b}-a &middot; Követés: a KovaaK's 105 404 játékosának legjobb ${c}-a`, rtSrc: 'Adatforrások',
+  rtRes: (ms, fl, on) => `Reakció ${ms} ms &middot; ${fl} mp célonként &middot; ${on} a célon`, rtTop: p => `A játékosok legjobb ${p}-a`, rtNone: 'Még nincs rangod. Csináld meg a Rangtesztet.', calT: 'Újraszámoltuk a rangodat', calOk: 'Értem',
+  ht: {btn: 'Tesztjeim', t: 'A Rangtesztjeid', none: 'Még nincs Rangteszted.', n: n => `${n} teszt`, best: (t, p) => `Legjobb: ${t}, legjobb ${p}`,
+    trend: (a, b) => `Utolsó 10 az első 10-hez képest: ${a} &rarr; ${b}`, top: 'legjobb', cols: ['Mikor', 'Rang', 'Reakció', 'Célravetés', 'Követés', 'Érz.', ''],
+    re: 'Újra', reT: 'Ugyanazok a célok, mint ebben a tesztben', old: 'nincs mag', was: (ms, fl, on) => `Ez a teszt először: ${ms} ms &middot; ${fl} mp &middot; ${on}`, off: 'Offline: az ezen a gépen mentett tesztek.'}, rtWhy: (a, b, c) => `Reakció: a Human Benchmark 70 940 eredményének legjobb ${a}-a &middot; Célravetés: a KovaaK's 78 563 játékosának legjobb ${b}-a &middot; Követés: a KovaaK's 105 404 játékosának legjobb ${c}-a`, rtSrc: 'Adatforrások',
   rtBest: (t, p) => `A legjobbad: ${t}, legjobb ${p}`,
   share: 'Kihívom a barátaimat', copied: 'Kimásolva. Küldd el a barátaidnak.', pts: p => p + ' pont',
   shareTxt: (t, p, st, link) => `${t} vagyok a North God Aimben, ${p} ponttal és ${st} csillaggal. Győzz le: ${link}`,
@@ -176,13 +182,13 @@ const topTxt = p => { p = Math.max(1e-4, p); const x = String(p < 0.01 ? (p * 10
 const KEPT = {petra: 1};
 const bestRk = P => [P.rk, ...(P.hist || [])].filter(x => x && x.rt > 0 && x.fl > 0 && x.on >= 0).reduce((b, x) => !b || rkScore(x).z > rkScore(b).z ? x : b, null);
 function tierOf(P) { const k = KEPT[(NAME || '').toLowerCase()], b = bestRk(P); return Math.max(b ? rkScore(b).t : -1, k != null ? k : -1); }
-function rankTest() { play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6, near: 10, far: 45, even: 1}, {k: 'track', s: 20, r: 1.8, v: 1.3, sines: 1}], L.rt, me().sens, Date.now(), judgeRank); }
+let RR = null; function rankTest(sd) { if (!sd) RR = null; play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6, near: 10, far: 45, even: 1}, {k: 'track', s: 20, r: 1.8, v: 1.3, sines: 1}], L.rt, me().sens, sd || Date.now(), judgeRank); }
 function judgeRank(res, why) {
   if (why) return show(`<div class="tag">${L.rt}</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
   const a = res[0].rts.slice().sort((x, y) => x - y), r = {pf: perfNow(), rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3), v: 2};
-  const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), v: r.v, rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT}]).slice(-40); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; P.rk = bestRk(P) || P.rk; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
+  const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), v: r.v, rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT, sd: run.sd, re: RR ? RR.at : undefined}]).slice(-40); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; P.rk = bestRk(P) || P.rk; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
   const b = rkScore(P.rk);
-  show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${rkWhy(r)}</p><p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
+  show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${rkWhy(r)}</p>${RR ? `<p class="dim">${L.ht.was(RR.rt, (+RR.fl).toFixed(2), pct(RR.on))}</p>` : ''}<p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
   ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
   ${CT ? `<button id="go" onclick="CT='';course()">${L.co.back}</button><button class="alt" onclick="rankTest()">${L.retry}</button>` : `<button id="go" onclick="rankTest()">${L.retry}</button>`}<button class="alt" onclick="CT='';map()">${L.map}</button>`);
 }
@@ -279,13 +285,27 @@ function rankPop(P) { const t = tierOf(P), was = P.seenT != null ? P.seenT : CAL
   o.style.cssText = 'position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:50';
   o.innerHTML = `<div class="card" style="max-width:560px"><div class="tag">${L.calT}</div><div class="rank" style="font-size:24px">${L.tier(L.tierUp(L.tiers[was], L.tiers[t]))}</div><p>${CAL.why[LANG] || CAL.why.en}</p><button id="calok">${L.calOk}</button><button class="alt" onclick="this.closest('div[style]').remove();sources()">${L.srcBtn}</button></div>`;
   document.body.appendChild(o); o.querySelector('#calok').onclick = () => o.remove(); }
+let TRIALS = [];
+const okRk = x => x && x.rt > 0 && x.fl > 0 && x.on >= 0, medN = a => a.slice().sort((x, y) => x - y)[a.length >> 1];
+async function trials() { const P = me(); let all = (P.hist || []).filter(okRk), off = !ONLINE || !TOKS[NAME];
+  if (!off) { try { const o = await api('/runs', {n: NAME, tok: TOKS[NAME]}); if (Array.isArray(o)) { const k = new Set(o.map(x => x.at)); all = o.filter(okRk).concat(all.filter(x => !k.has(x.at))); } else off = true; } catch (e) { off = true; } }
+  TRIALS = all.sort((a, b) => a.at - b.at); const n = TRIALS.length, b = bestRk({hist: TRIALS});
+  const tz = a => a.length ? rkScore({v: 2, rt: medN(a.map(x => x.rt)), fl: medN(a.map(x => x.fl)), on: medN(a.map(x => x.on))}) : null;
+  const f = tz(TRIALS.filter(x => x.v === 2).slice(0, 10)), l = tz(TRIALS.filter(x => x.v === 2).slice(-10));
+  const day = t => new Date(t).toLocaleString(LANG === 'hu' ? 'hu-HU' : 'en-GB', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'});
+  const rows = TRIALS.map((x, i) => { const sc = rkScore(x); return `<tr><td>${day(x.at)}</td><td>${L.tiers[sc.t]} <span class="dim">${L.ht.top} ${topTxt(sc.top)}</span></td><td>${Math.round(x.rt)} ms</td><td>${(+x.fl).toFixed(2)} s</td><td>${pct(x.on)}</td><td>${(+x.sens || 0).toFixed(3)}</td><td>${x.sd ? `<button class="alt" style="margin:0;padding:4px 12px" title="${L.ht.reT}" onclick="rerun(${i})">${L.ht.re}</button>` : `<span class="dim">${L.ht.old}</span>`}</td></tr>`; }).reverse().join('');
+  show(`<div class="tag">${L.ht.t}</div>${off ? `<p class="dim">${L.ht.off}</p>` : ''}${n ? `<div class="hype">${L.ht.n(n)} &middot; ${L.ht.best(L.tiers[rkScore(b).t], topTxt(rkScore(b).top))}</div>
+  ${n >= 15 && f && l ? `<p>${L.ht.trend(L.tiers[f.t] + ', ' + L.ht.top + ' ' + topTxt(f.top), L.tiers[l.t] + ', ' + L.ht.top + ' ' + topTxt(l.top))}</p>` : ''}
+  <div style="max-height:52vh;overflow:auto;margin:10px 0"><table style="width:100%;border-collapse:collapse;font-size:14px;text-align:left"><tr>${L.ht.cols.map(c => `<th style="position:sticky;top:0;background:#0d0f14;padding:4px 6px">${c}</th>`).join('')}</tr>${rows}</table></div>` : `<p>${L.ht.none}</p>`}
+  <button id="go" onclick="CT='';rankTest()">${L.rtGo}</button><button class="alt" onclick="map()">${L.map}</button>`); }
+function rerun(i) { const x = TRIALS[i]; if (!x || !x.sd) return; RR = x; CT = ''; rankTest(x.sd); }
 function map() {
   const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
   const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
   rankPop(P); show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank" id="sanct">${POS ? L.rank(POS) : ''}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
   <div class="grid">${tiles}</div>${P.cleared >= STAGES.length ? `<h2 style="margin-top:18px;font-size:20px">${G().top}</h2><div class="grid">${genTiles(P)}</div>` : ""}
-  ${P.cleared >= STAGES.length ? `<button id="go" onclick="genIntro()">${G().btn(gxOf(P).n + 1)}</button>` : `<button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>`}<button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
+  ${P.cleared >= STAGES.length ? `<button id="go" onclick="genIntro()">${G().btn(gxOf(P).n + 1)}</button>` : `<button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>`}<button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button><button class="alt" onclick="trials()">${L.ht.btn}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
 function goalText(i) {
   const s = STAGES[i], e = ease(i), d = s.d.map(x => scaled(x, e));
@@ -540,7 +560,7 @@ function aimDown() {
   const d = D(); if (XK[d.k]) return XK[d.k].down(performance.now(), d, run.ds);
   if (d.k === 'track') return;
   if (d.k === 'react') { const now = performance.now(), s = run.ds, ms = T.length ? now - T[0].t0 : 0;
-    if (ms < 100) { s.misses++; if (s.misses > 1) s.rts.push(1000); T = []; s.at = now + foreperiod(); snd(140, 0.1, 'sawtooth', 0.04); return; }
+    if (ms < 100) { s.misses++; if (s.misses > 1) s.rts.push(1000); T = []; s.at = now + 1000 + Math.min(3500, -Math.log(1 - Math.random()) * 900); snd(140, 0.1, 'sawtooth', 0.04); return; }
     FX.push({y: T[0].y, p: T[0].p, r: T[0].r, t0: now}); snd(780, 0.09); return reactHit(now, ms); }
   const now = performance.now(), s = run.ds, t = T.find(t => angTo(t.y, t.p) < t.r);
   if (!t) { s.misses++; run.combo = 0; snd(140, 0.1, 'sawtooth', 0.04); return; }
@@ -863,7 +883,7 @@ function recFrame(now) { const r = run; if (r.rec.length > 9 * 144 * 150) return
 async function sendMotion(why) { const r = run; if (!ONLINE || !TOKS[NAME] || !r || r.rec.length < 9 * 30 || typeof CompressionStream === 'undefined') return;
   try { const z = new Uint8Array(await new Response(new Blob([new Float32Array(r.rec).buffer]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
     let s = ''; for (let i = 0; i < z.length; i += 8192) s += String.fromCharCode.apply(null, z.subarray(i, i + 8192));
-    const meta = {v: 1, label: r.label, k: r.drills.map(d => d.k), sens: r.sens, yaw: YAW, g: GAMES[GAME][0], raw: RAW, w: cv.width, h: cv.height, ended: why ? 1 : 0,
+    const meta = {v: 1, sd: r.sd, label: r.label, k: r.drills.map(d => d.k), sens: r.sens, yaw: YAW, g: GAMES[GAME][0], raw: RAW, w: cv.width, h: cv.height, ended: why ? 1 : 0,
       res: r.res.map(x => ({k: x.k, t: +(+x.time).toFixed(2), m: x.misses, on: +(+x.on).toFixed(3)}))};
     api('/motion', {n: NAME, tok: TOKS[NAME], meta, m: btoa(s)}).catch(() => {}); } catch (e) {} }
 
