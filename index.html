@@ -956,7 +956,7 @@ TX.hu.af = {t: i => `${i}. kalibráló kör`, b: 'Találj el 10 célt. Minden k�
 
 // ---------- Endless Ascent: after stage 13, each new stage is generated from the player's own numbers ----------
 // Seven routes; each profile draws one of seven card colours at random, kept for good. The weakest route is picked from the latest Rank Trials parts and the motion of recent plays,
-// each route is a ladder (see LAD): one thing gets harder in small even steps, and the target is always the next rank.
+// each skill is a ladder (see RKD): tiny steps on the Rank Trials drill toward the next rank's line.
 const ROUTES = ['speed', 'precision', 'timing', 'tracking', 'reaction', 'switching', 'mixed'];
 const COLS = ['black', 'red', 'blue', 'yellow', 'green', 'white', 'purple'];   // one per profile, drawn once at random
 const pcol = P => { const g = gxOf(P); if (!COLS.includes(g.col)) g.col = COLS[(Math.random() * COLS.length) | 0]; return g.col; };
@@ -967,8 +967,9 @@ const GX = {
       tracking: 'your tracking is your weakest part against the next rank', reaction: 'your reaction is your weakest part against the next rank', switching: 'a change of pace: fast target switching', mixed: 'a blend of your two weakest parts'},
     next: t => `Next rank: ${t}`, top: 'Endless Ascent', need: 'Take the Rank Trials first, so the stages can be built from your real numbers.', rt: 'Rank Trials',
     stats: s => [s.tph && `${s.tph.toFixed(2)} s per target`, s.acc != null && `${Math.round(s.acc * 100)}% hits`, s.os && `first push ${s.os >= 1 ? '+' : ''}${Math.round((s.os - 1) * 100)}%`, s.dw && `${Math.round(s.dw)} ms on target before the click`, s.on != null && `${Math.round(s.on * 100)}% tracking`].filter(Boolean).join(' &middot; '),
-    last: 'Your last play', lvl: l => `Step ${l}`, spd: v => `ball speed ${v.toFixed(2)}`, goal: g => `Step up when your average of the last 3 plays here reaches ${g}.`, hold: (a, g, n) => `Your average over the last ${n} at this step: ${a}. Step up at ${g}.`, stepUp: n => `One step up: step ${n} is slightly harder. Stay with it until it feels normal.`, cleared: 'STAGE CLEAR', notYet: 'NOT YET', again: 'Again, same step', nextBtn: 'Next stage', map: 'Stage map',
+    last: 'Your last play', lvl: l => `Step ${l}`, spd: v => `ball speed ${v.toFixed(2)}`, goal: g => `Step up when your average of the last 3 plays reaches ${g}. Each step is a tiny bit harder, sized from your own numbers, until you reach the next rank's line.`, hold: (a, g, n) => `Your average over the last ${n} at this step: ${a}. Step up at ${g}.`, stepUp: n => `One step up: step ${n} is slightly harder. Stay with it until it feels normal.`, cleared: 'STAGE CLEAR', notYet: 'NOT YET', again: 'Again, same step', nextBtn: 'Next stage', map: 'Stage map',
     check: t => `Five stages cleared since your last Rank Trials. Your numbers have moved: prove ${t} in the Rank Trials.`,
+    dReact: d => `${d.n} reaction clicks: click the moment the target appears.`,
     dPeek: d => `Targets pop out of ${d.doors} doorways: hit ${d.n}. Each stays ${f1(d.life)} s; ${d.lives} escaped ends the stage.`,
     dSwitch: d => `Hold fire on ${d.n} moving targets until each one breaks.`,
     done: n => `${n} endless stage${n === 1 ? '' : 's'} cleared`},
@@ -978,16 +979,17 @@ const GX = {
       tracking: 'a követésed a leggyengébb részed a következő ranghoz képest', reaction: 'a reakciód a leggyengébb részed a következő ranghoz képest', switching: 'tempóváltás: gyors célváltás', mixed: 'a két leggyengébb részed keveréke'},
     next: t => `Következő rang: ${t}`, top: 'Végtelen emelkedés', need: 'Előbb csináld meg a Rangtesztet, hogy a szinteket a valódi számaidból építsük.', rt: 'Rangteszt',
     stats: s => [s.tph && `${s.tph.toFixed(2).replace('.', ',')} mp célonként`, s.acc != null && `${Math.round(s.acc * 100)}% találat`, s.os && `első mozdulat ${s.os >= 1 ? '+' : ''}${Math.round((s.os - 1) * 100)}%`, s.dw && `${Math.round(s.dw)} ms a célon kattintás előtt`, s.on != null && `${Math.round(s.on * 100)}% követés`].filter(Boolean).join(' &middot; '),
-    last: 'Az utolsó játékod', lvl: l => `${l}. lépcső`, spd: v => `labdasebesség ${v.toFixed(2).replace('.', ',')}`, goal: g => `Akkor lépsz feljebb, ha az utolsó 3 játékod átlaga itt eléri ezt: ${g}.`, hold: (a, g, n) => `Az utolsó ${n} játékod átlaga ezen a lépcsőn: ${a}. Feljebb lépés: ${g}.`, stepUp: n => `Egy lépcsővel feljebb: a(z) ${n}. lépcső kicsit nehezebb. Maradj rajta, amíg megszokod.`, cleared: 'SZINT TELJESÍTVE', notYet: 'MÉG NEM', again: 'Újra, ugyanez a lépcső', nextBtn: 'Következő szint', map: 'Szintek',
+    last: 'Az utolsó játékod', lvl: l => `${l}. lépcső`, spd: v => `labdasebesség ${v.toFixed(2).replace('.', ',')}`, goal: g => `Akkor lépsz feljebb, ha az utolsó 3 játékod átlaga eléri ezt: ${g}. Minden lépcső egy hajszállal nehezebb, a saját számaidból méretezve, amíg el nem éred a következő rang határát.`, hold: (a, g, n) => `Az utolsó ${n} játékod átlaga ezen a lépcsőn: ${a}. Feljebb lépés: ${g}.`, stepUp: n => `Egy lépcsővel feljebb: a(z) ${n}. lépcső kicsit nehezebb. Maradj rajta, amíg megszokod.`, cleared: 'SZINT TELJESÍTVE', notYet: 'MÉG NEM', again: 'Újra, ugyanez a lépcső', nextBtn: 'Következő szint', map: 'Szintek',
     check: t => `Öt szintet teljesítettél a legutóbbi Rangteszt óta. A számaid elmozdultak: bizonyítsd a(z) ${t} rangot a Rangtesztben.`,
+    dReact: d => `${d.n} reakciókattintás: kattints abban a pillanatban, amikor a cél megjelenik.`,
     dPeek: d => `A célok ${d.doors} ajtóból bukkannak elő: találj el ${d.n}-t. Mindegyik ${f1(d.life).replace('.', ',')} mp-ig marad; ha ${d.lives} elszökik, vége.`,
     dSwitch: d => `Tartsd a tüzet ${d.n} mozgó célon, amíg mindegyik szét nem törik.`,
     done: n => `${n} végtelen szint teljesítve`}};
 const G = () => GX[LANG] || GX.en;
-const gFmt = (r, x) => { const m = LAD[r].m, h = LANG === 'hu'; if (x == null || isNaN(x)) return '-';
-  if (m === 'tph') return (h ? x.toFixed(2).replace('.', ',') + ' mp' : x.toFixed(2) + ' s') + (h ? ' célonként' : ' per target');
-  if (m === 'ok') return Math.round(x * 3) + (h ? ' / 3 teljesítve' : ' of 3 cleared');
-  return Math.round(x * 100) + '%' + (m === 'on' ? (h ? ' követés' : ' tracking') : (h ? ' találat' : ' hits')); };
+const gFmt = (r, x) => { const k = KEY[r], h = LANG === 'hu'; if (x == null || isNaN(x)) return '-';
+  if (k === 'rt') return Math.round(x) + (h ? ' ms reakció' : ' ms reaction');
+  if (k === 'fl') return (h ? x.toFixed(3).replace('.', ',') + ' mp' : x.toFixed(3) + ' s') + (h ? ' célonként' : ' per target');
+  return Math.round(x * 1000) / 10 + '%' + (h ? ' követés' : ' tracking'); };
 const gxOf = P => { P.gx = P.gx || {n: 0, lv: {}, h: [], since: 0}; return P.gx; };
 
 function genStats(res, rec) {
@@ -1011,49 +1013,53 @@ function genStats(res, rec) {
 const rkLast = P => (P.hist || []).filter(x => x && x.rt > 0 && x.fl > 0 && x.on >= 0).slice(-5);
 const rkNow = P => { const h = rkLast(P); if (!h.length) return bestRk(P); const m = k => h.map(x => x[k]).sort((x, y) => x - y)[h.length >> 1];
   return {rt: m('rt'), fl: m('fl'), on: m('on'), v: h[h.length - 1].v, at: h[h.length - 1].at}; };
-function pickRoute(P) {
-  const g = gxOf(P), b = rkNow(P), v2 = b.v === 2;
-  const parts = {reaction: zOf(RK_RT, Math.max(80, Math.min(2000, b.rt)), RK_RTZ), speed: zOf(v2 ? RK_FL : RK_FL1, Math.max(0.15, Math.min(10, b.fl))), tracking: zOf(v2 ? RK_ON : RK_ON1, Math.max(0, Math.min(1, b.on)))};
-  const order = Object.keys(parts).sort((x, y) => parts[x] - parts[y]), recent = g.h.slice(-3), last = g.h.map(x => x.f);
-  const os = recent.filter(x => x.os).map(x => x.os), dw = recent.filter(x => x.dw).map(x => x.dw), acc = recent.filter(x => x.acc != null).map(x => x.acc);
-  const avg = a => a.reduce((s, x) => s + x, 0) / a.length;
-  let r = order[0];
-  if ((os.length && Math.abs(avg(os) - 0.95) > 0.12) || (acc.length && avg(acc) < 0.82)) r = 'precision';
-  else if (dw.length && avg(dw) > 230) r = 'timing';
-  if (g.hold && g.hold.at === b.at && g.hold.n < 5 && LAD[g.hold.r]) r = g.hold.r;   // stay on one skill for 5 step-ups; a new Rank Trials re-picks
-  else g.hold = {r, n: 0, at: b.at};
-  return {r, two: order.slice(0, 2)};
-}
 
-// Ladders: each skill moves ONE thing in small even steps, starting where the player's own Rank Trials say they are comfortable.
-// A step is passed when the average of the last 3 plays on it reaches the mark; 6 plays without it steps back one.
-// base(b) reads the comfort point from the Rank Trials median (rt ms, fl s per flick, on 0-1); drill(s, c) builds step s; m/hi/goal = the averaged number and the mark.
-const cl = (x, lo, hi) => Math.max(lo, Math.min(hi, x)), up = (x, s, f) => +(x * Math.pow(f, s)).toFixed(3);
-const LAD = {
-  tracking: {base: b => ({v: cl(1.3 * (0.5 + b.on) * 0.85, 0.7, 2.2), on: cl(b.on + 0.05, 0.3, 0.7)}), drill: (s, c) => ({k: 'track', s: 12, r: 2.2, v: up(c.v, s, 1.04)}), m: 'on', hi: 1, goal: (s, c) => c.on},
-  speed: {base: b => ({t: cl(b.fl * 1.25, 0.4, 3)}), drill: (s, c) => ({k: 'flick', n: 12, r: 2}), m: 'tph', goal: (s, c) => up(c.t, s, 0.97)},
-  precision: {base: b => ({r: 2.2}), drill: (s, c) => ({k: 'flick', n: 10, r: Math.max(0.6, up(c.r, s, 0.96)), near: 20, far: 60}), m: 'acc', hi: 1, goal: () => 0.85},
-  timing: {base: b => ({l: cl(b.fl * 2.4, 0.7, 2.5)}), drill: (s, c) => ({k: 'flick', n: 12, r: 2, life: up(c.l, s, 0.96), lives: 3}), m: 'ok', hi: 1, goal: () => 0.66},
-  reaction: {base: b => ({l: cl(b.rt * 0.003, 0.6, 2)}), drill: (s, c) => ({k: 'peek', n: 10, r: 2.2, life: up(c.l, s, 0.96), lives: 3, cue: 0, doors: 4}), m: 'ok', hi: 1, goal: () => 0.66}};
-const ladOf = (P, r) => { const g = gxOf(P); g.lad = g.lad || {}; return g.lad[r] = g.lad[r] || {s: 0, c: LAD[r].base(rkNow(P)), a: []}; };
+// Ladders: each skill trains on the Rank Trials' own drill and climbs in tiny steps from where the player is comfortable to the next rank's line.
+// Settings chosen by ladsim/sim.js (10,000 simulated players per setting, play-to-play noise measured from real trials): a step is 0.1 of the
+// player's own noise (about 1 ms reaction, 0.002 s per flick, 0.8% ball speed); the last-3 average must meet the goal; 3 misses in a row
+// ease the goal back by 0.75 noise. That held a median 85-91% pass rate with the 90th-percentile losing streak at 4-6 plays.
+const RKD = {reaction: {k: 'react', n: 5, r: 4}, speed: {k: 'flick', n: 20, r: 1.6, near: 10, far: 45, even: 1}, tracking: {k: 'track', s: 20, r: 1.8, v: 1.3, sines: 1}};
+const KEY = {reaction: 'rt', speed: 'fl', tracking: 'on'}, NZ = {rt: 9, fl: 0.04, on: 0.03}, NZW = {rt: 0.2, fl: 0.4, on: 0.4};
+const medA = a => { a = a.slice().sort((x, y) => x - y); return a[a.length >> 1]; };
+function noiseOf(P, k) { const h = (P.hist || []).filter(x => x && x.v === 2 && x[k] > 0).slice(-20); if (h.length < 5) return NZ[k];
+  const d = h.slice(1).map((x, i) => x[k] - h[i][k]), m = d.reduce((u, y) => u + y, 0) / d.length, sd = Math.sqrt(d.reduce((u, y) => u + (y - m) ** 2, 0) / (d.length - 1)) / Math.SQRT2;
+  return Math.max(NZ[k] / 2, Math.min(NZ[k] * 2, sd)); }
+const lineFor = (P, k) => { const t = Math.min(5, Math.max(0, tierOf(P))), l = RK7.line[t]; return k === 'rt' ? l[0] : k === 'fl' ? l[1] : l[2] / 100; };
+const zPart = (k, x) => k === 'rt' ? zOf(RK_RT, Math.max(80, Math.min(2000, x)), RK_RTZ) : k === 'fl' ? zOf(RK_FL, Math.max(0.15, Math.min(10, x))) : zOf(RK_ON, Math.max(0, Math.min(1, x)));
+// The goal: rt/fl = ms or s to beat (lower is better); tracking = ball speed, with the next rank's tracking share as the fixed mark (share falls about in step with speed).
+function ladOf(P, r) { const g = gxOf(P), k = KEY[r], b = rkNow(P), sd = noiseOf(P, k), line = lineFor(P, k); g.lad = g.lad || {};
+  let L1 = g.lad[r]; if (!L1 || L1.k !== k) L1 = g.lad[r] = {k, s: 0, a: [], f: 0, sd, line, g: k === 'on' ? Math.min(1.3, 1.3 * Math.max(0.05, b.on - 0.75 * sd) / line) : b[k] + 0.75 * sd};
+  L1.sd = sd; L1.line = line; return L1; }
+const ladGoal = L1 => L1.k === 'on' ? L1.line : L1.g, ladDone = L1 => L1.k === 'on' ? L1.g >= 1.3 : L1.g <= L1.line;
+function ladStep(L1, ok) {   // one step = 0.1 noise; tracking converts it to a speed factor through the mark
+  const u = 0.1 * L1.sd;
+  if (ok) { L1.s++; L1.f = 0; if (L1.k === 'on') L1.g = Math.min(1.3, L1.g * (1 + u / L1.line)); else L1.g = Math.max(L1.line, L1.g - u); }
+  else if (++L1.f >= 3) { L1.f = 0; L1.a = []; if (L1.k === 'on') L1.g = Math.max(0.3, L1.g * (1 - 7.5 * u / L1.line)); else L1.g += 7.5 * u; } }
+function ladMetric(k, res) { const r = res[0]; if (!r) return null; return k === 'rt' ? (r.rts && r.rts.length ? medA(r.rts) : null) : k === 'fl' ? (r.n ? r.time / r.n : null) : r.on; }
+// The skill to train is the one furthest (in weighted rank points) from the next rank's line; it stays for 15 plays or until its line is reached.
+function pickRoute(P) { const g = gxOf(P), b = rkNow(P), at = b.at;
+  if (g.hold && g.hold.at === at && g.hold.n < 15 && RKD[g.hold.r] && !ladDone(ladOf(P, g.hold.r))) return {r: g.hold.r, two: []};
+  const gap = r => { const k = KEY[r]; return ladDone(ladOf(P, r)) ? -9 : NZW[k] * (zPart(k, lineFor(P, k)) - zPart(k, b[k])); };
+  const r = Object.keys(RKD).sort((x, y) => gap(y) - gap(x))[0]; g.hold = {r, n: 0, at}; return {r, two: []}; }
 function genStage(P, force) {
-  const pk = force || pickRoute(P), r = LAD[pk.r] ? pk.r : 'tracking', g = gxOf(P), L1 = ladOf(P, r);
-  g.cur = {r, d: [Object.assign(LAD[r].drill(L1.s, L1.c), {need: {}})], lv: L1.s + 1, two: pk.two, at: (rkNow(P) || {}).at};
+  const pk = force || pickRoute(P), r = RKD[pk.r] ? pk.r : 'tracking', g = gxOf(P), L1 = ladOf(P, r), d = Object.assign({}, RKD[r], {need: {}});
+  if (r === 'tracking') d.v = +L1.g.toFixed(3);
+  g.cur = {r, d: [d], lv: L1.s + 1, two: [], at: (rkNow(P) || {}).at};
   return g.cur;
 }
-const gDesc = x => x.k === 'flick' ? L.dFlick(x) : x.k === 'track' ? L.dTrack(x) : x.k === 'move' ? L.dMove(x) : x.k === 'peek' ? G().dPeek(x) : G().dSwitch(x);
+const gDesc = x => x.k === 'react' ? G().dReact(x) : x.k === 'flick' ? L.dFlick(x) : x.k === 'track' ? L.dTrack(x) : x.k === 'move' ? L.dMove(x) : x.k === 'peek' ? G().dPeek(x) : G().dSwitch(x);
 const nextTier = P => L.tiers[Math.min(6, Math.max(0, tierOf(P) + 1))];
 const routeBadge = r => `<span class="rbadge">${G().route[r]}</span>`;
 
 function genIntro() {
   const P = me(), g = gxOf(P);
   if (!bestRk(P)) return show(`<div class="tag">${G().top}</div><p>${G().need}</p><button id="go" onclick="CT='';rankTest()">${G().rt}</button><button class="alt" onclick="map()">${G().map}</button>`);
-  const c = g.cur && g.cur.at === (rkNow(P) || {}).at && LAD[g.cur.r] ? g.cur : genStage(P); save();   // a new Rank Trials rebuilds the waiting stage
+  const c = g.cur && g.cur.at === (rkNow(P) || {}).at && RKD[g.cur.r] && g.cur.d[0].k === RKD[g.cur.r].k ? g.cur : genStage(P); save();   // a new Rank Trials rebuilds the waiting stage
   const last = g.h[g.h.length - 1];
   show(`<div class="gxcard r-${pcol(P)}"><div class="tag">${G().top} &middot; ${L.stage(g.n + 1)}</div><h2>${G().head}</h2>
   <div>${routeBadge(c.r)} <span class="dim">${G().rwhy[c.r]}</span></div>
   ${last ? `<p class="dim">${G().last}: ${G().stats(last)}</p>` : ''}
-  <p>${c.d.map(gDesc).join(' ')} ${G().goal(gFmt(c.r, LAD[c.r].goal(ladOf(P, c.r).s, ladOf(P, c.r).c)))}</p>
+  <p>${c.d.map(gDesc).join(' ')} ${G().goal(gFmt(c.r, ladGoal(ladOf(P, c.r))))}</p>
   <p class="dim">${G().next(nextTier(P))} &middot; ${G().lvl(c.lv)}${c.d[0].k === 'track' ? ' &middot; ' + G().spd(c.d[0].v) : ''}</p></div>
   <div class="hype">${G().ask}</div>
   <button id="go" onclick="genPlay()">${G().yes}</button><button class="alt" onclick="map()">${G().later}</button>`);
@@ -1061,11 +1067,12 @@ function genIntro() {
 function genPlay() { const c = gxOf(me()).cur; play(c.d.map(x => Object.assign({}, x)), G().top + ' - ' + G().route[c.r], me().sens, Date.now(), (res, why) => genDone(res, why)); }
 function genDone(res, why) {
   const P = me(), g = gxOf(P), c = g.cur, st = genStats(res, run && run.rec);
-  const r = c.r, Ld = LAD[r], L1 = ladOf(P, r), x = Ld.m === 'ok' ? (why ? 0 : 1) : st[Ld.m], goal = Ld.goal(L1.s, L1.c);
-  if (x != null && !(why && Ld.m !== 'ok')) L1.a = L1.a.concat([x]).slice(-6);   // a quit or timeout does not count against the average
-  const avg = L1.a.slice(-3).reduce((u, y) => u + y, 0) / Math.max(1, L1.a.slice(-3).length), ok = L1.a.length > 0 && (Ld.hi ? avg >= goal : avg <= goal);
-  if (ok) { L1.s++; L1.a = []; g.hold && g.hold.n++; } else if (L1.a.length >= 6) { L1.s = Math.max(0, L1.s - 1); L1.a = []; }
-  why = (why ? why + ' ' : '') + G().hold(gFmt(r, avg), gFmt(r, goal), Math.min(3, L1.a.length || 3));
+  const r = c.r, L1 = ladOf(P, r), k = L1.k, x = why ? null : ladMetric(k, res), goal = ladGoal(L1);
+  if (x != null) L1.a = L1.a.concat([x]).slice(-3);   // a quit or timeout does not count
+  const avg = L1.a.length ? L1.a.reduce((u, y) => u + y, 0) / L1.a.length : null, ok = avg != null && (k === 'on' ? avg >= goal : avg <= goal);
+  if (x != null || ok) ladStep(L1, ok); g.hold && g.hold.n++;
+  why = (why ? why + ' ' : '') + G().hold(gFmt(r, avg), gFmt(r, goal), L1.a.length || 1);
+  if (k === 'rt' && x != null) st.rt = Math.round(x);
   g.h = g.h.concat([Object.assign({f: r, ok: ok ? 1 : 0}, st)]).slice(-12);
   if (ok) { g.n++; g.since = (g.since || 0) + 1; g.cur = null; } else genStage(P, {r, two: c.two});
   save(); tune(ok ? [523, 659, 784, 1047] : [392, 330, 262], ok ? 110 : 130, ok ? 0.3 : 0.22);
