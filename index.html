@@ -1127,7 +1127,7 @@ const DUX = {
       trace: ['8 seconds on the ball, same as the Rank Trials.', 'A smaller ball, same speed. Precision under pressure.', 'A bigger ball that changes direction without warning.']},
     games: 'Rounds', path: 'Path to God', unit: {react: v => v + ' ms', flick: v => v + ' s', trace: v => v + '%'},
     fp: (p, t, top) => `${p} Form Points &middot; ${t} &middot; top ${top} of scored players`, unr: n => `Unranked: ${n} more measured round${n === 1 ? '' : 's'} to place you.`,
-    rec: (w, l) => `${w} wins &middot; ${l} losses`, create: 'Create a duel', join: 'Join', code: 'Room code', board: 'Best in this Form', none: 'No ranked players yet.', share: 'Share my card',
+    rec: (w, l) => `${w} wins &middot; ${l} losses`, lb: 'Leaderboard', lbH: ['Player', 'Rank', 'Form Points', 'Wins', 'Losses'], back: 'Back to Duels', unrk: 'Unranked', create: 'Create a duel', join: 'Join', code: 'Room code', board: 'Best in this Form', none: 'No ranked players yet.', share: 'Share my card',
     wait: c => `Room ${c}. Send this link to your friend; the duel starts when they join.`, copy: 'Copy link', copied: 'Copied.', cancel: 'Leave', vs: (a, b) => `${a} vs ${b}`,
     fight: 'FIGHT', ready: 'Both of you are in. Press FIGHT (or Space) to lock the mouse; the first round starts after the countdown.',
     full: 'That room already has two players.', left: n => `${n} left the duel.`, lost: 'The connection to the duel was lost.', bad: 'Could not reach the duel server.',
@@ -1149,7 +1149,7 @@ const DUX = {
       flick: ['10 cél, ugyanaz, mint a Rangtesztben. A leggyorsabb nyeri a kört.', '5 apró cél. A hiba időbe kerül.', '8 messzi cél. Csak nagy rántások.'],
       trace: ['8 másodperc a labdán, ugyanaz, mint a Rangtesztben.', 'Kisebb labda, ugyanaz a sebesség. Pontosság nyomás alatt.', 'Nagyobb labda, ami figyelmeztetés nélkül irányt vált.']},
     games: 'Körök', path: 'Út az Istenig', unit: {react: v => v + ' ms', flick: v => String(v).replace('.', ',') + ' mp', trace: v => String(v).replace('.', ',') + '%'},
-    fp: (p, t, top) => `${p} formapont &middot; ${t} &middot; a mért játékosok legjobb ${top}-a`, unr: n => `Rangsorolatlan: még ${n} mért kör kell a besoroláshoz.`,
+    fp: (p, t, top) => `${p} formapont &middot; ${t} &middot; a mért játékosok legjobb ${top}-a`, lb: 'Ranglista', lbH: ['Játékos', 'Rang', 'Formapont', 'Győzelem', 'Vereség'], back: 'Vissza a párbajokhoz', unrk: 'Rangsorolatlan', unr: n => `Rangsorolatlan: még ${n} mért kör kell a besoroláshoz.`,
     rec: (w, l) => `${w} győzelem &middot; ${l} vereség`, create: 'Párbaj létrehozása', join: 'Belépés', code: 'Szobakód', board: 'A legjobbak ebben a formában', none: 'Még nincs rangsorolt játékos.', share: 'A kártyám megosztása',
     wait: c => `${c} szoba. Küldd el ezt a linket a barátodnak; a párbaj akkor indul, amikor belép.`, copy: 'Link másolása', copied: 'Kimásolva.', cancel: 'Kilépés', vs: (a, b) => `${a} vs ${b}`,
     fight: 'HARC', ready: 'Mindketten bent vagytok. Nyomd meg a HARC gombot (vagy a szóközt) az egér rögzítéséhez; az első kör a visszaszámlálás után indul.',
@@ -1201,7 +1201,7 @@ function duels() { const X = DX(), P = me();
       <div class="dim dpath">${X.path}: ${path}</div>
       <div class="dim">${X.games}: ${X.g[f].map((g, i) => `<b>${g}</b> ${X.gd[f][i]}`).join(' ')}</div>
       <div class="dtop" id="dtop-${f}"></div>
-      <button id="${f === 'react' ? 'go' : 'go-' + f}" onclick="duelCreate('${f}')">${X.create}</button></div>`; };
+      <button id="${f === 'react' ? 'go' : 'go-' + f}" onclick="duelCreate('${f}')">${X.create}</button> <button class="alt" onclick="duelBoard('${f}')">${X.lb}</button></div>`; };
   show(`<div class="tag">${X.h}</div><p class="dim">${X.sub}</p><div class="dforms">${DFORMS.map(card).join('')}</div>
     <p><input id="dcode" placeholder="${X.code}" maxlength="8" style="text-transform:uppercase;width:140px"> <button class="alt" onclick="duelJoin(document.getElementById('dcode').value)">${X.join}</button>
     <button class="alt" id="shr" onclick="shareIt()">${X.share}</button><button class="alt" onclick="map()">${L.map}</button></p>`);
@@ -1210,6 +1210,15 @@ function dTopFill() { const X = DX(); if (!Array.isArray(DTOP)) return;
   for (const f of DFORMS) { const el = document.getElementById('dtop-' + f); if (!el) continue;
     const r = DTOP.filter(x => x.f && x.f[f] && x.f[f].fp).sort((a, b) => b.f[f].fp - a.f[f].fp).slice(0, 1);   // only the single best player
     el.innerHTML = `<b>${X.board}</b> ` + (r.length ? esc(r[0].n) : X.none); } }
+// Full board for one Form: everyone who has played it. Ranked players by rank, then Form Points; unranked below, by wins.
+function duelBoard(f) { const X = DX(), cell = 'style="padding:6px 8px;border-top:1px solid var(--line)"';
+  const draw = rows => { const r = rows.filter(x => x.f && x.f[f] && (x.f[f].fp || x.f[f].w || x.f[f].l)).map(x => ({n: x.n, ...x.f[f]}));
+    r.sort((a, b) => (b.fp ? 1 : 0) - (a.fp ? 1 : 0) || (b.t || 0) - (a.t || 0) || (b.fp || 0) - (a.fp || 0) || b.w - a.w || a.l - b.l);
+    show(`${demblem(f, 72)}<div class="tag">${X.f[f]} &middot; ${X.lb}</div>
+      <table style="width:100%;font-size:15px;border-collapse:collapse;margin:12px 0"><tr class="dim"><td>#</td>${X.lbH.map(h => `<td>${h}</td>`).join('')}</tr>
+      ${r.length ? r.map((x, i) => `<tr${x.n === NAME ? ' style="color:var(--gold);font-weight:700"' : ''}><td ${cell}>${i + 1}</td><td ${cell}>${esc(x.n)}</td><td ${cell}>${x.fp ? L.tiers[x.t] : X.unrk}</td><td ${cell}>${x.fp || '-'}</td><td ${cell}>${x.w || 0}</td><td ${cell}>${x.l || 0}</td></tr>`).join('')
+        : `<tr><td colspan="6" ${cell}>${X.none}</td></tr>`}</table><button class="alt" onclick="duels()">${X.back}</button>`); };
+  fetch(BOARD.replace(/\/$/, '') + '/duels').then(r => r.json()).then(rows => { DTOP = rows; draw(rows); }).catch(() => draw(Array.isArray(DTOP) ? DTOP : [])); }
 const esc = s => String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 
 // ---- Rooms ----
