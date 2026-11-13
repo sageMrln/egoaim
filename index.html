@@ -4,7 +4,7 @@
 :root{--bg:#05070d;--card:#0c1220;--line:#1c2840;--txt:#e6ecf7;--dim:#8391ab;--acc:#2f7bff;--acc2:#00d8ff;--ok:#36d07a;--bad:#ff4d5e;--gold:#ffc83d}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:radial-gradient(ellipse at 50% 0%,#0d1a33 0%,var(--bg) 60%);color:var(--txt);font:17px/1.5 "Segoe UI",system-ui,sans-serif;overflow:hidden}
 #ui{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 38px;max-width:820px;width:94%;max-height:96vh;overflow:auto;box-shadow:0 0 60px #2f7bff22}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 38px;width:calc(94vw / var(--z,1));max-width:1500px;max-height:calc(96vh / var(--z,1));zoom:var(--z,1);overflow:auto;box-shadow:0 0 60px #2f7bff22}
 h1{margin:0;font-size:46px;letter-spacing:4px;font-weight:900;font-style:italic}h1 span{color:var(--acc)}
 h2{margin:0 0 8px;font-size:26px;letter-spacing:1px}.tag{color:var(--acc2);font-size:14px;letter-spacing:3px;text-transform:uppercase;font-weight:700}
 p{margin:8px 0;color:#c4cede}.dim{color:var(--dim);font-size:14px}.hype{font-size:22px;font-style:italic;color:#fff;margin:6px 0 4px}
@@ -1059,4 +1059,4 @@ function genTiles(P) {
 }
 
 if (location.hash === '#sources') sources(); else intro();
-</script></body></html>
+</script><script>function fit() { document.documentElement.style.setProperty('--z', Math.max(0.8, Math.min(1.5, innerWidth / 1500, innerHeight / 880)).toFixed(3)); } fit(); addEventListener('resize', fit);</script></body></html>
