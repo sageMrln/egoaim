@@ -1208,8 +1208,8 @@ function duels() { const X = DX(), P = me();
   fetch(BOARD.replace(/\/$/, '') + '/duels').then(r => r.json()).then(rows => { DTOP = rows; dTopFill(); }).catch(() => {}); }
 function dTopFill() { const X = DX(); if (!Array.isArray(DTOP)) return;
   for (const f of DFORMS) { const el = document.getElementById('dtop-' + f); if (!el) continue;
-    const r = DTOP.filter(x => x.f && x.f[f] && x.f[f].fp).sort((a, b) => b.f[f].fp - a.f[f].fp).slice(0, 5);
-    el.innerHTML = `<b>${X.board}</b> ` + (r.length ? r.map((x, i) => `${i + 1}. ${esc(x.n)} ${x.f[f].fp} (${L.tiers[x.f[f].t]})`).join(' &middot; ') : X.none); } }
+    const r = DTOP.filter(x => x.f && x.f[f] && x.f[f].fp).sort((a, b) => b.f[f].fp - a.f[f].fp).slice(0, 1);   // only the single best player
+    el.innerHTML = `<b>${X.board}</b> ` + (r.length ? esc(r[0].n) : X.none); } }
 const esc = s => String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 
 // ---- Rooms ----
