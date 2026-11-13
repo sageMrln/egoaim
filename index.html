@@ -111,7 +111,7 @@ en: {
   rtRes: (ms, fl, on) => `Reaction ${ms} ms &middot; ${fl} s per flick &middot; ${on} on target`, rtTop: p => `Top ${p} of players`, rtNone: 'No rank yet. Take the Rank Trials.', calT: 'Your rank was recalculated', calOk: 'Got it',
   ht: {btn: 'My trials', t: 'Your Rank Trials', none: 'No Rank Trials yet.', n: n => `${n} trial${n === 1 ? '' : 's'}`, best: (t, p) => `Best: ${t}, top ${p}`,
     trend: (a, b) => `Last 10 against first 10: ${a} &rarr; ${b}`, top: 'top', cols: ['When', 'Rank', 'Reaction', 'Flick', 'Tracking', 'Sens', ''],
-    re: 'Rerun', reT: 'Same targets as this run', old: 'no seed', off: 'Offline: showing the trials saved on this PC.'}, rtWhy: (a, b, c) => `Reaction: top ${a} of 70,940 Human Benchmark results &middot; Flicks: top ${b} of 78,563 KovaaK's players &middot; Tracking: top ${c} of 105,404 KovaaK's players`, rtSrc: 'See the data sources',
+    re: 'Rerun', reT: 'Same targets as this run', prac: 'Practice run: reruns never count toward your rank.', pr: 'practice', old: 'no seed', off: 'Offline: showing the trials saved on this PC.'}, rtWhy: (a, b, c) => `Reaction: top ${a} of 70,940 Human Benchmark results &middot; Flicks: top ${b} of 78,563 KovaaK's players &middot; Tracking: top ${c} of 105,404 KovaaK's players`, rtSrc: 'See the data sources',
   rtBest: (t, p) => `Your best: ${t}, top ${p}`,
   share: 'Challenge friends', copied: 'Copied. Paste it to your friends.', pts: p => p + ' pts',
   shareTxt: (t, p, st, link) => `I am ${t} in North God Aim with ${p} points and ${st} stars. Beat me: ${link}`,
@@ -154,7 +154,7 @@ hu: {
   rtRes: (ms, fl, on) => `Reakció ${ms} ms &middot; ${fl} mp célonként &middot; ${on} a célon`, rtTop: p => `A játékosok legjobb ${p}-a`, rtNone: 'Még nincs rangod. Csináld meg a Rangtesztet.', calT: 'Újraszámoltuk a rangodat', calOk: 'Értem',
   ht: {btn: 'Tesztjeim', t: 'A Rangtesztjeid', none: 'Még nincs Rangteszted.', n: n => `${n} teszt`, best: (t, p) => `Legjobb: ${t}, legjobb ${p}`,
     trend: (a, b) => `Utolsó 10 az első 10-hez képest: ${a} &rarr; ${b}`, top: 'legjobb', cols: ['Mikor', 'Rang', 'Reakció', 'Célravetés', 'Követés', 'Érz.', ''],
-    re: 'Újra', reT: 'Ugyanazok a célok, mint ebben a tesztben', old: 'nincs mag', off: 'Offline: az ezen a gépen mentett tesztek.'}, rtWhy: (a, b, c) => `Reakció: a Human Benchmark 70 940 eredményének legjobb ${a}-a &middot; Célravetés: a KovaaK's 78 563 játékosának legjobb ${b}-a &middot; Követés: a KovaaK's 105 404 játékosának legjobb ${c}-a`, rtSrc: 'Adatforrások',
+    re: 'Újra', reT: 'Ugyanazok a célok, mint ebben a tesztben', prac: 'Gyakorló futam: az újrajátszás sosem számít bele a rangodba.', pr: 'gyakorlás', old: 'nincs mag', off: 'Offline: az ezen a gépen mentett tesztek.'}, rtWhy: (a, b, c) => `Reakció: a Human Benchmark 70 940 eredményének legjobb ${a}-a &middot; Célravetés: a KovaaK's 78 563 játékosának legjobb ${b}-a &middot; Követés: a KovaaK's 105 404 játékosának legjobb ${c}-a`, rtSrc: 'Adatforrások',
   rtBest: (t, p) => `A legjobbad: ${t}, legjobb ${p}`,
   share: 'Kihívom a barátaimat', copied: 'Kimásolva. Küldd el a barátaidnak.', pts: p => p + ' pont',
   shareTxt: (t, p, st, link) => `${t} vagyok a North God Aimben, ${p} ponttal és ${st} csillaggal. Győzz le: ${link}`,
@@ -205,15 +205,17 @@ function ranks() { const R = RK7[LANG] || RK7.en, P = me(), b = bestRk(P), t = P
   show(`<div class="tag">${R.h}</div><p class="dim">${R.sub}</p>${b ? '' : `<p>${R.none}</p>`}<div class="rk7">${rows}</div><p class="dim">${R.note}</p>
   <button id="go" onclick="map()">${L.map}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>`); }
 const KEPT = {petra: 1};
-const bestRk = P => [P.rk, ...(P.hist || [])].filter(x => x && x.rt > 0 && x.fl > 0 && x.on >= 0).reduce((b, x) => !b || rkScore(x).z > rkScore(b).z ? x : b, null);
+const rkOwn = P => { const h = (P.hist || []).filter(x => x && !x.re), rr = (P.hist || []).filter(x => x && x.re), k = P.rk;
+  return [k && !rr.some(x => x.rt === k.rt && x.fl === k.fl && x.on === k.on) ? k : null, ...h]; };
+const bestRk = P => rkOwn(P).filter(x => x && x.rt > 0 && x.fl > 0 && x.on >= 0).reduce((b, x) => !b || rkScore(x).z > rkScore(b).z ? x : b, null);
 function tierOf(P) { const k = KEPT[(NAME || '').toLowerCase()], b = bestRk(P); return Math.max(b ? rkScore(b).t : -1, k != null ? k : -1); }
 let RR = null; function rankTest(sd) { if (!sd) RR = null; play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6, near: 10, far: 45, even: 1}, {k: 'track', s: 20, r: 1.8, v: 1.3, sines: 1}], L.rt, me().sens, sd || crypto.getRandomValues(new Uint32Array(1))[0], judgeRank); }
 function judgeRank(res, why) {
   if (why) return show(`<div class="tag">${L.rt}</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
   const a = res[0].rts.slice().sort((x, y) => x - y), r = {pf: perfNow(), rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3), v: 2};
-  const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), v: r.v, rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT, sd: run.sd, re: RR ? RR.at : undefined}]).slice(-40); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; P.rk = bestRk(P) || P.rk; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
+  const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), v: r.v, rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT, sd: run.sd, re: RR ? RR.at : undefined}]).slice(-40); if (!RR && (!P.rk || sc.z > rkScore(P.rk).z)) P.rk = r; P.rk = bestRk(P) || null; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
   const b = rkScore(P.rk);
-  show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${rkWhy(r)}</p>${RR ? cmpHtml(RR, r) : ''}<p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
+  show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${rkWhy(r)}</p>${RR ? `<p class="dim">${L.ht.prac}</p>` + cmpHtml(RR, r) : ''}<p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
   ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim" style="cursor:pointer" onclick="ranks()" title="${(RK7[LANG] || RK7.en).btn}">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
   ${CT ? `<button id="go" onclick="CT='';course()">${L.co.back}</button><button class="alt" onclick="rankTest()">${L.retry}</button>` : `<button id="go" onclick="rankTest()">${L.retry}</button>`}<button class="alt" onclick="CT='';map()">${L.map}</button>`);
 }
@@ -318,7 +320,7 @@ async function trials() { const P = me(); let all = (P.hist || []).filter(okRk),
   const tz = a => a.length ? rkScore({v: 2, rt: medN(a.map(x => x.rt)), fl: medN(a.map(x => x.fl)), on: medN(a.map(x => x.on))}) : null;
   const f = tz(TRIALS.filter(x => x.v === 2).slice(0, 10)), l = tz(TRIALS.filter(x => x.v === 2).slice(-10));
   const day = t => new Date(t).toLocaleString(LANG === 'hu' ? 'hu-HU' : 'en-GB', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'});
-  const rows = TRIALS.map((x, i) => { const sc = rkScore(x); return `<tr><td>${day(x.at)}</td><td>${L.tiers[sc.t]} <span class="dim">${L.ht.top} ${topTxt(sc.top)}</span></td><td>${Math.round(x.rt)} ms</td><td>${(+x.fl).toFixed(2)} s</td><td>${pct(x.on)}</td><td>${(+x.sens || 0).toFixed(3)}</td><td>${x.sd ? `<button class="alt" style="margin:0;padding:4px 12px" title="${L.ht.reT}" onclick="rerun(${i})">${L.ht.re}</button>` : `<span class="dim">${L.ht.old}</span>`}</td></tr>`; }).reverse().join('');
+  const rows = TRIALS.map((x, i) => { const sc = rkScore(x); return `<tr><td>${day(x.at)}</td><td>${x.re ? `<span class="dim">${L.ht.pr}</span> ` : ''}${L.tiers[sc.t]} <span class="dim">${L.ht.top} ${topTxt(sc.top)}</span></td><td>${Math.round(x.rt)} ms</td><td>${(+x.fl).toFixed(2)} s</td><td>${pct(x.on)}</td><td>${(+x.sens || 0).toFixed(3)}</td><td>${x.sd ? `<button class="alt" style="margin:0;padding:4px 12px" title="${L.ht.reT}" onclick="rerun(${i})">${L.ht.re}</button>` : `<span class="dim">${L.ht.old}</span>`}</td></tr>`; }).reverse().join('');
   show(`<div class="tag">${L.ht.t}</div>${off ? `<p class="dim">${L.ht.off}</p>` : ''}${n ? `<div class="hype">${L.ht.n(n)} &middot; ${L.ht.best(L.tiers[rkScore(b).t], topTxt(rkScore(b).top))}</div>
   ${n >= 15 && f && l ? `<p>${L.ht.trend(L.tiers[f.t] + ', ' + L.ht.top + ' ' + topTxt(f.top), L.tiers[l.t] + ', ' + L.ht.top + ' ' + topTxt(l.top))}</p>` : ''}
   <div style="max-height:52vh;overflow:auto;margin:10px 0"><table style="width:100%;border-collapse:collapse;font-size:14px;text-align:left"><tr>${L.ht.cols.map(c => `<th style="position:sticky;top:0;background:#0d0f14;padding:4px 6px">${c}</th>`).join('')}</tr>${rows}</table></div>` : `<p>${L.ht.none}</p>`}
@@ -1010,7 +1012,7 @@ function genStats(res, rec) {
 }
 
 // Routes follow the player's form now, not their best day: the median of the last 5 Rank Trials (one bad or lucky run cannot steer it).
-const rkLast = P => (P.hist || []).filter(x => x && x.rt > 0 && x.fl > 0 && x.on >= 0).slice(-5);
+const rkLast = P => (P.hist || []).filter(x => x && !x.re && x.rt > 0 && x.fl > 0 && x.on >= 0).slice(-5);
 const rkNow = P => { const h = rkLast(P); if (!h.length) return bestRk(P); const m = k => h.map(x => x[k]).sort((x, y) => x - y)[h.length >> 1];
   return {rt: m('rt'), fl: m('fl'), on: m('on'), v: h[h.length - 1].v, at: h[h.length - 1].at}; };
 
@@ -1021,7 +1023,7 @@ const rkNow = P => { const h = rkLast(P); if (!h.length) return bestRk(P); const
 const RKD = {reaction: {k: 'react', n: 5, r: 4}, speed: {k: 'flick', n: 20, r: 1.6, near: 10, far: 45, even: 1}, tracking: {k: 'track', s: 20, r: 1.8, v: 1.3, sines: 1}};
 const KEY = {reaction: 'rt', speed: 'fl', tracking: 'on'}, NZ = {rt: 9, fl: 0.04, on: 0.03}, NZW = {rt: 0.2, fl: 0.4, on: 0.4};
 const medA = a => { a = a.slice().sort((x, y) => x - y); return a[a.length >> 1]; };
-function noiseOf(P, k) { const h = (P.hist || []).filter(x => x && x.v === 2 && x[k] > 0).slice(-20); if (h.length < 5) return NZ[k];
+function noiseOf(P, k) { const h = (P.hist || []).filter(x => x && !x.re && x.v === 2 && x[k] > 0).slice(-20); if (h.length < 5) return NZ[k];
   const d = h.slice(1).map((x, i) => x[k] - h[i][k]), m = d.reduce((u, y) => u + y, 0) / d.length, sd = Math.sqrt(d.reduce((u, y) => u + (y - m) ** 2, 0) / (d.length - 1)) / Math.SQRT2;
   return Math.max(NZ[k] / 2, Math.min(NZ[k] * 2, sd)); }
 const lineFor = (P, k) => { const t = Math.min(5, Math.max(0, tierOf(P))), l = RK7.line[t]; return k === 'rt' ? l[0] : k === 'fl' ? l[1] : l[2] / 100; };
