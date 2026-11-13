@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" translate="no"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://egoaim-board.sagemrln.workers.dev; base-uri 'none'; form-action 'none'"><meta name="google" content="notranslate"><title>North God Aim - aim trainer and sensitivity finder</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Find your mouse sensitivity with a blind A/B test, convert it between games, and climb 13 aim stages.">
+<html lang="en" translate="no"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://egoaim-board.sagemrln.workers.dev wss://egoaim-board.sagemrln.workers.dev; base-uri 'none'; form-action 'none'"><meta name="google" content="notranslate"><title>North God Aim - aim trainer and sensitivity finder</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Find your mouse sensitivity with a blind A/B test, convert it between games, and climb 13 aim stages.">
 <style>
 :root{--bg:#05070d;--card:#0c1220;--line:#1c2840;--txt:#e6ecf7;--dim:#8391ab;--acc:#2f7bff;--acc2:#00d8ff;--ok:#36d07a;--bad:#ff4d5e;--gold:#ffc83d}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:radial-gradient(ellipse at 50% 0%,#0d1a33 0%,var(--bg) 60%);color:var(--txt);font:17px/1.5 "Segoe UI",system-ui,sans-serif;overflow:hidden}
@@ -43,6 +43,9 @@ select,input{background:#070b14;color:var(--txt);border:1px solid var(--line);bo
 .rk7 .r.lock{opacity:.72}.rk7 .r.me{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 0 28px var(--c)55;opacity:1}.rk7 h3{margin:0;font-size:22px;color:var(--c);letter-spacing:.04em}.rk7 .ep{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#ffffffa0}
 .rk7 .sh{font-size:20px;font-weight:700;text-align:right}.rk7 .sh small{display:block;font-size:12px;font-weight:400;color:#ffffffa0}.rk7 .you{grid-column:1/-1;font-weight:700;color:var(--c)}.rk7 .bar{height:6px;margin-top:4px}
 @media (max-width:760px){.rk7 .r{grid-template-columns:1fr}.rk7 .sh{text-align:left}}
+.dforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:12px 0}.dform{border:1px solid var(--line);border-radius:14px;padding:16px 18px;background:linear-gradient(160deg,#1a2a4a55,transparent 70%)}
+.dform h3{margin:2px 0 6px;font-size:22px;color:var(--acc2)}.dform .ep{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#ffffffa0}.dform p{margin:6px 0}.dme{font-weight:700;margin:8px 0;color:var(--gold)}
+.dpath{margin:6px 0}.dpath .me{color:var(--gold);font-weight:700}.dtop{margin:8px 0;font-size:13px}.dform button{margin-top:8px}
 </style></head><body>
 <canvas id="c3"></canvas><canvas id="c"></canvas><div id="hud"></div><div id="perf"></div><div id="ui"></div>
 <script>
@@ -76,7 +79,7 @@ const pct = x => Math.round(x * 100) + '%', f1 = x => x.toFixed(1);
 
 const TX = {
 en: {
-  sub: 'Aim training. Find your sensitivity, then clear 13 short stages up to the final test.',
+  sub: 'Find your true sensitivity. Train reaction, flicks and tracking. Earn your rank among the Sanctum’s practitioners, then duel your friends.',
   name: 'Your name', game: 'Your game', sens: 'Your sensitivity in that game',
   sensNote: 'The in-game mouse sensitivity, not the Windows mouse speed. Not sure? Leave the suggested number and press Find my sensitivity. Use the mouse, DPI and mousepad you play with. Esc pauses.',
   find: 'Find my sensitivity (4 min)', have: 'I have my sensitivity: log in', cont: 'Continue',
@@ -119,7 +122,7 @@ en: {
   bHead: ['Player', 'Rank', 'Points', 'Stars', 'Stages'], top: 'All players', pw: 'Password', pwNote: 'Your profile is saved online: the same name and password bring it back on any PC. Use a password only for this game.', offline: 'The server could not be reached, so this session is saved on this PC only.', errs: {'wrong password': 'Wrong password for that name. New here? Pick another name.', locked: 'Too many wrong passwords. That name is locked for an hour.', 'slow down': 'Wait two seconds, then press again.', 'name or password': 'Type a name and a password of at least 4 characters.'},
 },
 hu: {
-  sub: 'Célzóedzés. Megkeressük az érzékenységedet, aztán 13 rövid szinten mész végig az utolsó próbáig.',
+  sub: 'Találd meg a valódi érzékenységedet. Edzd a reakciót, a célravetést és a követést. Szerezz rangot a Szentély gyakorlói között, aztán párbajozz a barátaiddal.',
   name: 'A neved', game: 'A játékod', sens: 'Az érzékenységed abban a játékban',
   sensNote: 'A játékon belüli egérérzékenység, nem a Windows egérsebessége. Nem tudod? Hagyd a javasolt számot, és nyomd meg az Érzékenységem megkeresése gombot. Azt az egeret, DPI-t és egérpadot használd, amivel játszani szoktál. Az Esc megállítja.',
   find: 'Érzékenységem megkeresése (4 perc)', have: 'Megvan az érzékenységem: belépés', cont: 'Folytatás',
@@ -261,7 +264,7 @@ async function lock() {
     try { const pr = cv.requestPointerLock(o); if (pr && pr.catch) pr.catch(bad); } catch (e) { bad(); } });
   RAW = !COMPAT && await tryLock({unadjustedMovement: true}); if (!RAW && !document.pointerLockElement) await tryLock(); return !!document.pointerLockElement; }
 function compatBtn() { return `<button class="alt" onclick="COMPAT = !COMPAT; localStorage.ego_compat = COMPAT ? '1' : '0'; this.outerHTML = compatBtn()">${L.compat(COMPAT)}</button>`; }
-function pauseScreen(msg) { show(`<h2>${L.paused}</h2>${msg ? `<p>${msg}</p>` : ''}<button id="go" onclick="play(run.drills, run.label, run.sens, run.sd, run.done)">${L.restart}</button>${compatBtn()}<p class="dim">${L.compatNote}</p>`); }
+function pauseScreen(msg) { if (run && run.duel && DUEL.ws) return duelPause(); show(`<h2>${L.paused}</h2>${msg ? `<p>${msg}</p>` : ''}<button id="go" onclick="play(run.drills, run.label, run.sens, run.sd, run.done)">${L.restart}</button>${compatBtn()}<p class="dim">${L.compatNote}</p>`); }
 function unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
 let AC;
 function snd(f, d, type = 'triangle', v = 0.08) {
@@ -326,13 +329,13 @@ async function trials() { const P = me(); let all = (P.hist || []).filter(okRk),
   <div style="max-height:52vh;overflow:auto;margin:10px 0"><table style="width:100%;border-collapse:collapse;font-size:14px;text-align:left"><tr>${L.ht.cols.map(c => `<th style="position:sticky;top:0;background:#0d0f14;padding:4px 6px">${c}</th>`).join('')}</tr>${rows}</table></div>` : `<p>${L.ht.none}</p>`}
   <button id="go" onclick="CT='';rankTest()">${L.rtGo}</button><button class="alt" onclick="map()">${L.map}</button>`); }
 function rerun(i) { const x = TRIALS[i]; if (!x || !x.sd) return; RR = x; CT = ''; rankTest(x.sd); }
-function map() {
+function map() { if (DJ) { const c = DJ; DJ = ''; return duelJoin(c); }
   const P = me(), nx = Math.min(P.cleared, STAGES.length - 1);
   const tiles = STAGES.map((s, i) => { const st = P.stars[i] || 0, open = i <= P.cleared;
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
   rankPop(P); show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank" id="sanct">${POS ? L.rank(POS) : ''}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
   <div class="grid">${tiles}</div>${P.cleared >= STAGES.length ? `<h2 style="margin-top:18px;font-size:20px">${G().top}</h2><div class="grid">${genTiles(P)}</div>` : ""}
-  ${P.cleared >= STAGES.length ? `<button id="go" onclick="genIntro()">${G().btn(gxOf(P).n + 1)}</button>` : `<button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>`}<button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button><button class="alt" onclick="trials()">${L.ht.btn}</button><button class="alt" onclick="ranks()">${(RK7[LANG] || RK7.en).btn}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
+  ${P.cleared >= STAGES.length ? `<button id="go" onclick="genIntro()">${G().btn(gxOf(P).n + 1)}</button>` : `<button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>`}<button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button><button class="alt" onclick="trials()">${L.ht.btn}</button><button class="alt" onclick="ranks()">${(RK7[LANG] || RK7.en).btn}</button>${P.cleared ? `<button class="alt" onclick="duels()">${DX().btn}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
 function goalText(i) {
   const s = STAGES[i], e = ease(i), d = s.d.map(x => scaled(x, e));
@@ -479,10 +482,11 @@ function draw(now) { perfFrame();
     if (t.life) { g.strokeStyle = '#00d8ff'; g.lineWidth = 3; g.beginPath(); g.arc(s[0], s[1], r + 6, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.max(0, 1 - (now - t.t0) / t.life)); g.stroke(); g.lineWidth = 1; }
     if (t.max) { g.strokeStyle = '#ffc83d'; g.lineWidth = 4; g.beginPath(); g.arc(s[0], s[1], r + 7, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * t.hp / t.max); g.stroke(); g.lineWidth = 1; } }
   FX = FX.filter(f => now - f.t0 < 260);
-  for (const f of FX) { const s = proj(f.y, f.p); if (!s) continue; const a = (now - f.t0) / 260;
-    g.strokeStyle = `rgba(0,216,255,${1 - a})`; g.lineWidth = 3; g.beginPath(); g.arc(s[0], s[1], s[2] * Math.tan(f.r) + 30 * a, 0, 7); g.stroke(); g.lineWidth = 1; }
+  for (const f of FX) { const s = proj(f.y, f.p); if (!s) continue; const a = Math.max(0, (now - f.t0) / 260);
+    g.strokeStyle = `rgba(0,216,255,${1 - a})`; g.lineWidth = 3; g.beginPath(); g.arc(s[0], s[1], Math.max(0.5, s[2] * Math.tan(f.r) + 30 * a), 0, 7); g.stroke(); g.lineWidth = 1; }
   const cx = cv.width / 2, cy = cv.height / 2; g.fillStyle = '#fff'; g.fillRect(cx - 1, cy - 9, 2, 6); g.fillRect(cx - 1, cy + 3, 2, 6); g.fillRect(cx - 9, cy - 1, 6, 2); g.fillRect(cx + 3, cy - 1, 6, 2);
   if (xk && xk.walk) xOver(now, xd);
+  if (run && run.duel && (mode === 'aim' || mode === 'count')) try { duelOver(now); } catch (e) { console.error(e); }
   if (run && run.flash && now - run.flash.t0 < 650) { g.fillStyle = run.flash.c; g.font = '800 22px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(run.flash.s, cx, cy + 42); }
 }
 function bigText(t) { g.fillStyle = '#00d8ff'; g.font = '900 140px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, cv.width / 2, cv.height / 2 - 120); }
@@ -529,7 +533,8 @@ function perfTxt(q) { q = q || perfNow(); return `${q.fps || '-'} FPS  ·  ${L.p
 function aimMove(e) { perfInput(e); run.mdx += e.movementX; run.mdy += e.movementY; cam.y += e.movementX * dpc; cam.p = Math.max(R(-80), Math.min(R(80), cam.p - e.movementY * dpc)); if (GLP && !COMPAT && mode === 'aim' && performance.now() - glLast > 2) glDraw(); }
 function finishDrill(now) {
   const d = D(), s = run.ds, el = (now - s.t0) / 1000;
-  run.res.push({k: d.k, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0, rts: s.rts || null, x: s.x || null});
+  run.res.push({k: d.k, ri: d.ri, n: d.n, time: el + 0.25 * s.misses, misses: s.misses, on: s.on / Math.max(1, s.frames), lives: d.lives || 0, left: s.left, cap: d.s && d.k === 'flick' ? d.s : 0, rts: s.rts || null, x: s.x || null});
+  if (run.duel) duelOnDrill(run.res[run.res.length - 1], d);
   run.di++; if (run.di >= run.drills.length) return endPlay(null);
   startDrill(now);
 }
@@ -577,7 +582,7 @@ function tick(now) {
     s.frames++; if (angTo(t.y, t.p) < t.r) s.on++;
     if (angTo(t.y, t.p) < 4 * t.r) { s.x = s.x || {ah: 0, an: 0}; s.x.ah += clamp(wrap(cam.y - t.y) * Math.sign(t.v) / t.r, -3, 3); s.x.an++; }
     h += f1(Math.max(0, d.s - el)) + ' s   ' + L.hudOn(s.on / Math.max(1, s.frames));
-    if (el >= d.s) return finishDrill(now);
+    if (el >= d.s) { finishDrill(now); if (mode !== 'aim') return; }
   }
   if (run.combo >= 3) h += '   ' + L.combo(run.combo);
   recFrame(now); hud.textContent = h + (RAW || COMPAT ? '' : L.rawNote);
@@ -1091,5 +1096,222 @@ function genTiles(P) {
     `<div class="tile next r-${pcol(P)}" onclick="genIntro()">${G().btn(g.n + 1)}<b>${G().ask}</b></div>`;
 }
 
+// ---------- North God Duels: three Forms (React, Flick, Trace), 1v1 with health bars over a websocket room ----------
+// The board's Durable Object referees (board/src/index.js, class Duel): same seed and round list for both, damage settled per round,
+// attacks and live progress relayed. Damage numbers were tuned by duelsim/sim.js (10,000 matches per setting).
+// Form Points come only from the "measured" rounds, whose drills match the Rank Trials, so they sit on the same real-data scales.
+const DFORMS = ['react', 'flick', 'trace'];
+const DPOOL = {   // index = the round number the referee draws; m = how a round is scored; meas = counts toward Form Points
+  react: [{d: {k: 'react', n: 3, r: 4}, m: 'rt', meas: 1}, {d: {k: 'draw', n: 3, r: 1.6}, m: 'qd'}, {d: {k: 'react', n: 4, r: 4}, m: 'rt', meas: 1}],
+  flick: [{d: {k: 'flick', n: 10, r: 1.6, near: 10, far: 45, even: 1}, m: 'tpt', meas: 1}, {d: {k: 'flick', n: 5, r: 0.75, near: 10, far: 45, even: 1}, m: 'tpt'}, {d: {k: 'flick', n: 8, r: 1.6, near: 30, far: 70, even: 1}, m: 'tpt'}],
+  trace: [{d: {k: 'track', s: 8, r: 1.8, v: 1.3, sines: 1}, m: 'on', meas: 1}, {d: {k: 'track', s: 8, r: 1.3, v: 1.3, sines: 1}, m: 'on'}, {d: {k: 'track', s: 8, r: 2.0, v: 1.7}, m: 'on'}]};
+const DZT = [-1.036, -0.126, 0.524, 1.036, 1.645, 2.576];   // one skill's z at top 85, 55, 30, 15, 5 and 0.5%: the same seven ranks
+const DUX = {
+  en: {btn: 'North God Duels', h: 'NORTH GOD DUELS', sub: 'Challenge a friend 1v1. Same targets for both of you, round by round, until one health bar is empty. Win rounds to hit hard; fall behind and your Rage makes every hit you land stronger.',
+    f: {react: 'North God React', flick: 'North God Flick', trace: 'North God Trace'}, ep: {react: 'The First Shot', flick: 'The Snap', trace: 'The Beam'},
+    why: {react: 'Whoever reacts first fires first: peeking an angle, answering a swing, punishing a mistake. A God-level reaction turns every even fight into your fight.',
+      flick: 'Snapping onto a new target and stopping dead on it. It wins the opening duel and turns one kill into three before anyone can answer.',
+      trace: 'Holding the crosshair on a target that will not stand still: strafing duels, sprays, beam weapons. A God-level tracker deals damage while others are still adjusting.'},
+    god: {react: v => `God line: ${v} ms reaction, top 0.5% of 70,940 Human Benchmark results.`, flick: v => `God line: ${v} s per target, top 0.5% of 78,563 KovaaK's players.`, trace: v => `God line: ${v}% on target, top 0.5% of 105,404 KovaaK's players.`},
+    g: {react: ['Pure Reflex', 'Quickdraw', 'Rapid Reflex'], flick: ['Race', 'Sniper', 'Blitz'], trace: ['Beam Duel', 'Overload', 'Wild Beam']},
+    gd: {react: ['Click the moment the target appears. 3 draws.', 'Wait for it, then flick onto the target and fire. Fire early and it costs you.', 'Four reactions in a row, no let-up.'],
+      flick: ['10 targets, same as the Rank Trials. Fastest clears the round.', '5 tiny targets. Miss and it costs time.', '8 targets placed far out. Big snaps only.'],
+      trace: ['8 seconds on the ball, same as the Rank Trials.', 'A smaller ball, same speed. Precision under pressure.', 'A bigger ball that changes direction without warning.']},
+    games: 'Rounds', path: 'Path to God', unit: {react: v => v + ' ms', flick: v => v + ' s', trace: v => v + '%'},
+    fp: (p, t, top) => `${p} Form Points &middot; ${t} &middot; top ${top} of scored players`, unr: n => `Unranked: ${n} more measured round${n === 1 ? '' : 's'} to place you.`,
+    rec: (w, l) => `${w} wins &middot; ${l} losses`, create: 'Create a duel', join: 'Join', code: 'Room code', board: 'Best in this Form', none: 'No ranked players yet.', share: 'Share my card',
+    wait: c => `Room ${c}. Send this link to your friend; the duel starts when they join.`, copy: 'Copy link', copied: 'Copied.', cancel: 'Leave', vs: (a, b) => `${a} vs ${b}`,
+    fight: 'FIGHT', ready: 'Both of you are in. Press FIGHT (or Space) to lock the mouse; the first round starts after the countdown.',
+    full: 'That room already has two players.', left: n => `${n} left the duel.`, lost: 'The connection to the duel was lost.', bad: 'Could not reach the duel server.',
+    youHp: 'YOU', round: (i, g) => `Round ${i}: ${g}`, sd: 'SUDDEN DEATH', waitOpp: n => `Waiting for ${n}...`, hit: d => `-${d}`,
+    won: 'ROUND WON', lostR: 'ROUND LOST', tie: 'EVEN ROUND', shaken: 'SHAKEN!', smoked: 'SMOKED!', sent: k => k === 'shake' ? 'SHAKE SENT' : 'SMOKE SENT', holdIt: 'HOLD...',
+    win: 'VICTORY', lose: 'DEFEAT', draw: 'DRAW', forfeit: 'Your opponent left: the win is yours.',
+    end: (a, b) => `Rounds won ${a} - ${b}`, h2h: (n, w, l) => `Against ${n}: ${w} - ${l}`, mine: 'Your numbers this match', fpNow: 'Your Form rank now',
+    again: 'Rematch', againWait: n => `Waiting for ${n} to accept the rematch...`, againAsk: n => `${n} wants a rematch.`, lobby: 'Duel lobby',
+    pause: 'Paused in a duel', resume: 'Back to the duel', quit: 'Leave the duel', pauseNote: 'The round clock keeps running for your opponent: if you are away 30 seconds, the round counts as lost.',
+    rage: 'RAGE'},
+  hu: {btn: 'North God párbajok', h: 'NORTH GOD PÁRBAJOK', sub: 'Hívj ki egy barátot 1v1-re. Mindketten ugyanazokat a célokat kapjátok, körről körre, amíg valamelyik életcsík ki nem ürül. Nyert körrel nagyot ütsz; ha lemaradsz, a Dühöd minden találatodat erősebbé teszi.',
+    f: {react: 'North God React', flick: 'North God Flick', trace: 'North God Trace'}, ep: {react: 'Az első lövés', flick: 'A rántás', trace: 'A sugár'},
+    why: {react: 'Aki előbb reagál, az lő előbb: sarok mögül kilépve, egy rohamra válaszolva, egy hibát megbüntetve. Az isteni reakció minden kiegyenlített harcot a te harcoddá tesz.',
+      flick: 'Rárántani egy új célra, és pontosan megállni rajta. Ez nyeri a nyitó párbajt, és egy találatból hármat csinál, mielőtt bárki válaszolna.',
+      trace: 'Rajta tartani a célkeresztet egy célon, ami nem áll meg: oldalazó párbajok, sorozatok, sugárfegyverek. Az isteni követő már sebez, amíg mások még igazítanak.'},
+    god: {react: v => `Isteni határ: ${v} ms reakció, a Human Benchmark 70 940 eredményének legjobb 0,5%-a.`, flick: v => `Isteni határ: ${String(v).replace('.', ',')} mp célonként, a KovaaK's 78 563 játékosának legjobb 0,5%-a.`, trace: v => `Isteni határ: ${String(v).replace('.', ',')}% a célon, a KovaaK's 105 404 játékosának legjobb 0,5%-a.`},
+    g: {react: ['Tiszta reflex', 'Gyorstüzelés', 'Reflexsorozat'], flick: ['Verseny', 'Mesterlövész', 'Villám'], trace: ['Sugárpárbaj', 'Túlterhelés', 'Vad sugár']},
+    gd: {react: ['Kattints, amint a cél megjelenik. 3 lövés.', 'Várd ki, aztán ránts a célra és lőj. A korai lövés büntetést ér.', 'Négy reakció egymás után, megállás nélkül.'],
+      flick: ['10 cél, ugyanaz, mint a Rangtesztben. A leggyorsabb nyeri a kört.', '5 apró cél. A hiba időbe kerül.', '8 messzi cél. Csak nagy rántások.'],
+      trace: ['8 másodperc a labdán, ugyanaz, mint a Rangtesztben.', 'Kisebb labda, ugyanaz a sebesség. Pontosság nyomás alatt.', 'Nagyobb labda, ami figyelmeztetés nélkül irányt vált.']},
+    games: 'Körök', path: 'Út az Istenig', unit: {react: v => v + ' ms', flick: v => String(v).replace('.', ',') + ' mp', trace: v => String(v).replace('.', ',') + '%'},
+    fp: (p, t, top) => `${p} formapont &middot; ${t} &middot; a mért játékosok legjobb ${top}-a`, unr: n => `Rangsorolatlan: még ${n} mért kör kell a besoroláshoz.`,
+    rec: (w, l) => `${w} győzelem &middot; ${l} vereség`, create: 'Párbaj létrehozása', join: 'Belépés', code: 'Szobakód', board: 'A legjobbak ebben a formában', none: 'Még nincs rangsorolt játékos.', share: 'A kártyám megosztása',
+    wait: c => `${c} szoba. Küldd el ezt a linket a barátodnak; a párbaj akkor indul, amikor belép.`, copy: 'Link másolása', copied: 'Kimásolva.', cancel: 'Kilépés', vs: (a, b) => `${a} vs ${b}`,
+    fight: 'HARC', ready: 'Mindketten bent vagytok. Nyomd meg a HARC gombot (vagy a szóközt) az egér rögzítéséhez; az első kör a visszaszámlálás után indul.',
+    full: 'Abban a szobában már két játékos van.', left: n => `${n} kilépett a párbajból.`, lost: 'Megszakadt a kapcsolat a párbajjal.', bad: 'Nem érhető el a párbajszerver.',
+    youHp: 'TE', round: (i, g) => `${i}. kör: ${g}`, sd: 'HIRTELEN HALÁL', waitOpp: n => `Várakozás rá: ${n}...`, hit: d => `-${d}`,
+    won: 'KÖR MEGNYERVE', lostR: 'KÖR ELVESZTVE', tie: 'DÖNTETLEN KÖR', shaken: 'MEGRÁZVA!', smoked: 'BEFÜSTÖLVE!', sent: k => k === 'shake' ? 'RÁZÁS ELKÜLDVE' : 'FÜST ELKÜLDVE', holdIt: 'VÁRJ...',
+    win: 'GYŐZELEM', lose: 'VERESÉG', draw: 'DÖNTETLEN', forfeit: 'Az ellenfeled kilépett: tiéd a győzelem.',
+    end: (a, b) => `Megnyert körök: ${a} - ${b}`, h2h: (n, w, l) => `${n} ellen: ${w} - ${l}`, mine: 'A számaid ebben a meccsben', fpNow: 'A formarangod most',
+    again: 'Visszavágó', againWait: n => `Várakozás, hogy ${n} elfogadja a visszavágót...`, againAsk: n => `${n} visszavágót kér.`, lobby: 'Párbajterem',
+    pause: 'Szünet a párbajban', resume: 'Vissza a párbajba', quit: 'Kilépés a párbajból', pauseNote: 'A kör órája az ellenfelednek tovább megy: ha 30 másodpercig távol vagy, a kört elveszted.',
+    rage: 'DÜH'}};
+const DX = () => DUX[LANG] || DUX.en;
+const DUEL = {ws: null, room: '', form: '', k: 0, opp: '', go: null, rd: {}, hp: [100, 100], sum: null, again: false, oppAgain: false, left: false, prog: 0, fx: {}};
+
+// ---- Form Points: the median of the last 15 measured rounds on the real-data scale of that skill ----
+const dzOf = (f, x) => f === 'react' ? zOf(RK_RT, Math.max(80, Math.min(2000, x)), RK_RTZ) : f === 'flick' ? zOf(RK_FL, Math.max(0.15, Math.min(10, x))) : zOf(RK_ON, Math.max(0, Math.min(1, x)));
+const nfOf = (P, f) => { P.nf = P.nf || {}; return P.nf[f] = P.nf[f] || {m: [], w: 0, l: 0, h: {}}; };
+function formRank(P, f) { const s = nfOf(P, f), m = s.m.slice(-15); if (m.length < 5) return {need: 5 - m.length};
+  const v = medA(m), z = dzOf(f, v); let t = 0; DZT.forEach((x, j) => { if (z >= x) t = j + 1; });
+  return {v, z, t, fp: Math.round(1000 + 250 * z), top: 1 - Phi(z)}; }
+function dLine(f, z) { const lo = f !== 'trace'; let a = f === 'react' ? 100 : f === 'flick' ? 0.2 : 0, b = f === 'react' ? 700 : f === 'flick' ? 2 : 1;   // invert the skill's table
+  for (let i = 0; i < 50; i++) { const m = (a + b) / 2; if ((dzOf(f, m) > z) === lo) a = m; else b = m; } const v = (a + b) / 2;
+  return f === 'react' ? Math.round(v) : f === 'flick' ? +v.toFixed(2) : Math.round(v * 100); }
+function dMetric(f, pk, r) { if (!r) return null;
+  if (pk.m === 'rt') return r.rts && r.rts.length ? medA(r.rts) : null;
+  if (pk.m === 'qd') return r.rts && r.rts.length ? r.rts.reduce((a, x) => a + x, 0) / r.rts.length : null;
+  if (pk.m === 'tpt') return r.n ? r.time / r.n : null;
+  return r.on; }
+
+// ---- Lobby ----
+let DTOP = null;
+function duels() { const X = DX(), P = me();
+  const card = f => { const R = formRank(P, f), s = nfOf(P, f), god = dLine(f, DZT[5]);
+    const path = L.tiers.map((x, i) => `<span class="${R.t === i ? 'me' : ''}">${x}${i ? ' ' + X.unit[f](dLine(f, DZT[i - 1])) : ''}</span>`).join(' &middot; ');
+    return `<div class="dform"><div class="ep">${X.ep[f]}</div><h3>${X.f[f]}</h3><p>${X.why[f]}</p><p class="dim">${X.god[f](god)}</p>
+      <div class="dme">${R.need ? X.unr(R.need) : X.fp(R.fp, L.tiers[R.t], topTxt(R.top))} &middot; ${X.rec(s.w, s.l)}</div>
+      <div class="dim dpath">${X.path}: ${path}</div>
+      <div class="dim">${X.games}: ${X.g[f].map((g, i) => `<b>${g}</b> ${X.gd[f][i]}`).join(' ')}</div>
+      <div class="dtop" id="dtop-${f}"></div>
+      <button id="${f === 'react' ? 'go' : 'go-' + f}" onclick="duelCreate('${f}')">${X.create}</button></div>`; };
+  show(`<div class="tag">${X.h}</div><p class="dim">${X.sub}</p><div class="dforms">${DFORMS.map(card).join('')}</div>
+    <p><input id="dcode" placeholder="${X.code}" maxlength="8" style="text-transform:uppercase;width:140px"> <button class="alt" onclick="duelJoin(document.getElementById('dcode').value)">${X.join}</button>
+    <button class="alt" id="shr" onclick="shareIt()">${X.share}</button><button class="alt" onclick="map()">${L.map}</button></p>`);
+  fetch(BOARD.replace(/\/$/, '') + '/duels').then(r => r.json()).then(rows => { DTOP = rows; dTopFill(); }).catch(() => {}); }
+function dTopFill() { const X = DX(); if (!Array.isArray(DTOP)) return;
+  for (const f of DFORMS) { const el = document.getElementById('dtop-' + f); if (!el) continue;
+    const r = DTOP.filter(x => x.f && x.f[f] && x.f[f].fp).sort((a, b) => b.f[f].fp - a.f[f].fp).slice(0, 5);
+    el.innerHTML = `<b>${X.board}</b> ` + (r.length ? r.map((x, i) => `${i + 1}. ${esc(x.n)} ${x.f[f].fp} (${L.tiers[x.f[f].t]})`).join(' &middot; ') : X.none); } }
+const esc = s => String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
+
+// ---- Rooms ----
+const dCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('');
+function duelCreate(f) { duelOpen(dCode(), f); }
+function duelJoin(c) { c = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8); if (c.length >= 4) duelOpen(c, ''); }
+function duelLink() { return location.origin + location.pathname + '#d=' + DUEL.room; }
+function duelClose() { const w = DUEL.ws; DUEL.ws = null; if (w) try { w.close(); } catch (e) {} }
+function duelOpen(code, f) { const X = DX(); duelClose();
+  Object.assign(DUEL, {room: code, form: f, k: 0, opp: '', go: null, rd: {}, hp: [100, 100], sum: null, again: false, oppAgain: false, left: false, prog: 0, fx: {}});
+  let ws; try { ws = new WebSocket(BOARD.replace(/^http/, 'ws').replace(/\/$/, '') + `/duel?r=${code}&f=${f || ''}&n=${encodeURIComponent(NAME || 'Player')}`); } catch (e) { return show(`<p>${X.bad}</p><button id="go" onclick="duels()">${X.lobby}</button>`); }
+  DUEL.ws = ws; ws.onmessage = e => { let o; try { o = JSON.parse(e.data); } catch (x) { return; } if (DUEL.ws === ws) duelMsg(o); };
+  ws.onclose = () => { if (DUEL.ws !== ws) return; DUEL.ws = null; if (run && run.duel && (mode === 'aim' || mode === 'count')) { DUEL.lostConn = true; endPlay(null); } else if (!DUEL.sum) show(`<p>${X.lost}</p><button id="go" onclick="duels()">${X.lobby}</button>`); };
+  ws.onerror = () => {};
+  duelWaitScreen(); }
+function duelWaitScreen() { const X = DX();
+  show(`<div class="tag">${X.h}${DUEL.form ? ' &middot; ' + X.f[DUEL.form] : ''}</div><p>${X.wait(DUEL.room)}</p><p><input readonly value="${duelLink()}" style="width:min(520px,90%)" onclick="this.select()"></p>
+    <button id="go" onclick="navigator.clipboard && navigator.clipboard.writeText(duelLink()).then(() => this.textContent = DX().copied)">${X.copy}</button><button class="alt" onclick="duelClose();duels()">${X.cancel}</button>`); }
+function duelMsg(o) { const X = DX();
+  if (o.t === 'hi') { DUEL.k = o.k; DUEL.form = o.form; DUEL.opp = o.opp || ''; if (!run || !run.duel || mode !== 'aim') duelWaitScreen(); }
+  else if (o.t === 'opp') DUEL.opp = o.name;
+  else if (o.t === 'full') { duelClose(); show(`<p>${X.full}</p><button id="go" onclick="duels()">${X.lobby}</button>`); }
+  else if (o.t === 'go') { Object.assign(DUEL, {go: o, form: o.form, opp: o.names[1 - DUEL.k], rd: {}, hp: [100, 100], sum: null, again: false, oppAgain: false, left: false, prog: 0, fx: {}});
+    show(`<div class="tag">${X.f[o.form]}</div><div class="rank" style="font-size:40px">${X.vs(esc(o.names[DUEL.k]), esc(DUEL.opp))}</div><p>${X.ready}</p><button id="go" onclick="duelFight()">${X.fight}</button>`); }
+  else if (o.t === 'p') DUEL.prog = o.v;
+  else if (o.t === 'hp') DUEL.hp = o.hp;
+  else if (o.t === 'atk') { const now = performance.now(); DUEL.fx[o.k] = now + (o.k === 'shake' ? 1500 : 1200); if (run && run.duel) run.flash = {t0: now, s: o.k === 'shake' ? X.shaken : X.smoked, c: '#ff4d5e'}; snd(110, 0.25, 'sawtooth', 0.07); }
+  else if (o.t === 'rd') { DUEL.rd[o.i] = o; DUEL.hp = o.hp; }
+  else if (o.t === 'again') { DUEL.oppAgain = true; const el = document.getElementById('dagain'); if (el) el.textContent = X.againAsk(DUEL.opp); }
+  else if (o.t === 'left') { DUEL.left = true; if (run && run.duel && (mode === 'aim' || mode === 'count')) endPlay(null); else if (!DUEL.sum) duelWaitScreen(); } }
+const dSend = o => { try { DUEL.ws && DUEL.ws.readyState === 1 && DUEL.ws.send(JSON.stringify(o)); } catch (e) {} };
+
+// ---- The match: one continuous play(), each round followed by a 'dgap' intermission that waits for the referee ----
+function duelFight() { const o = DUEL.go; if (!o) return; const pool = DPOOL[o.form], drills = [];
+  o.rounds.forEach((ix, i) => { drills.push(Object.assign({}, pool[ix].d, {ri: i, pk: ix})); drills.push({k: 'dgap', ri: i}); });
+  play(drills, DX().f[o.form], me().sens, o.seed, (res, why) => duelDone(res, why));
+  run.duel = true; run.dsent = {}; run.dlast = 0; }
+function duelOnDrill(r, d) {   // called by finishDrill for every round: report the score
+  if (!run.duel || d.k === 'dgap') return; const pk = DPOOL[DUEL.form][d.pk], v = dMetric(DUEL.form, pk, r);
+  r.dv = v; r.dmeas = pk.meas ? 1 : 0; dSend({t: 'res', i: d.ri, v}); }
+XK.draw = {   // Quickdraw: hold still, the target appears off to the side, flick and fire. Firing early adds 300 ms to that draw.
+  start(now, d) { run.ds.rts = []; run.qd = {ph: 'wait', at: now + 1200 + rnd() * 2500, pen: 0}; T = []; },
+  tick(now, dt, d, s, el) { const q = run.qd;
+    if (q.ph === 'wait' && now >= q.at) { const side = rnd() < .5 ? -1 : 1; T = [{y: cam.y + side * R(8 + rnd() * 17), p: Math.max(R(-20), Math.min(R(20), cam.p + R((rnd() - .5) * 12))), r: R(d.r), t0: now}]; q.ph = 'up'; }
+    else if (q.ph === 'up' && now - T[0].t0 > 2500) this.next(now, d, s, 2500);
+    if (mode !== 'aim') return null;
+    return L.hudHits(s.hits, d.n) + (s.misses ? '   ' + L.rtFalse + ' x' + s.misses : ''); },
+  next(now, d, s, ms) { s.rts.push(ms + run.qd.pen); s.hits++; T = []; run.qd = {ph: 'wait', at: now + 1200 + rnd() * 2500, pen: 0}; if (s.hits >= d.n) finishDrill(now); },
+  down(now, d, s) { const q = run.qd;
+    if (q.ph === 'wait') { q.pen += 300; s.misses++; snd(140, 0.1, 'sawtooth', 0.04); return; }
+    const t = T[0]; if (!t || angTo(t.y, t.p) >= t.r) { q.pen += 100; run.combo = 0; snd(140, 0.1, 'sawtooth', 0.04); return; }
+    run.combo++; FX.push({y: t.y, p: t.p, r: t.r, t0: now}); snd(780, 0.09); this.next(now, d, s, now - t.t0); },
+  draw(now) { if (run.qd && run.qd.ph === 'wait') { g.fillStyle = '#ffc83d'; g.font = '800 26px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(DX().holdIt, cv.width / 2, cv.height / 2 - 60); } } };
+XK.dgap = {   // intermission: wait for the referee's ruling on this round, show it for 2.2 s, then the next round (or the end)
+  start(now, d) { run.dg = {t0: now, seen: 0}; T = []; dSend({t: 'p', v: 1}); },
+  tick(now, dt, d, s, el) { const rd = DUEL.rd[d.ri], X = DX();
+    if (DUEL.left || DUEL.lostConn) { endPlay(null); return null; }
+    if (rd && !run.dg.seen) { run.dg.seen = now; const me0 = DUEL.k, mine = rd.dmg[me0], theirs = rd.dmg[1 - me0];
+      if (theirs > mine) tune([523, 659, 784], 90, 0.25); else if (mine > theirs) snd(110, 0.35, 'sawtooth', 0.09); }
+    if (rd && now - run.dg.seen > 2200) { DUEL.prog = 0; if (rd.end !== undefined) { endPlay(null); return null; } finishDrill(now); return ''; }
+    return rd ? '' : X.waitOpp(DUEL.opp); },
+  down() {},
+  draw(now, d) { const rd = DUEL.rd[d.ri], X = DX(), cx = cv.width / 2, cy = cv.height / 2; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if (!rd) { g.fillStyle = '#9aa4b8'; g.font = '700 26px Segoe UI'; g.fillText(X.waitOpp(DUEL.opp), cx, cy - 80); return; }
+    const mine = rd.dmg[DUEL.k], theirs = rd.dmg[1 - DUEL.k], w = theirs > mine ? 1 : mine > theirs ? -1 : 0;
+    g.fillStyle = w > 0 ? '#36d07a' : w < 0 ? '#ff4d5e' : '#ffc83d'; g.font = '900 64px Segoe UI'; g.fillText(w > 0 ? X.won : w < 0 ? X.lostR : X.tie, cx, cy - 120);
+    g.font = '800 34px Segoe UI'; g.fillStyle = '#ff4d5e'; g.fillText(`${X.youHp} ${X.hit(mine)}`, cx - 170, cy - 50); g.fillStyle = '#36d07a'; g.fillText(`${esc(DUEL.opp).slice(0, 14)} ${X.hit(theirs)}`, cx + 170, cy - 50);
+    const v = rd.v, f = DUEL.form, fm = x => x == null ? '-' : f === 'trace' ? Math.round(x * 100) + '%' : f === 'flick' ? x.toFixed(2) + ' s' : Math.round(x) + ' ms';
+    g.font = '600 20px Segoe UI'; g.fillStyle = '#c8d0e0'; g.fillText(`${fm(v[DUEL.k])}   vs   ${fm(v[1 - DUEL.k])}`, cx, cy + 48); } };
+function duelOver(now) {   // drawn every frame of a duel: health bars, opponent progress, attacks, rage, heartbeat
+  if (!run || !run.duel) return; duelShake(now); const X = DX(), W = cv.width, k = DUEL.k, hp = DUEL.hp, d = D(), fx = DUEL.fx;
+  if (fx.smoke && now < fx.smoke) { g.save(); g.fillStyle = 'rgba(8,10,18,0.82)'; g.beginPath(); g.rect(0, 0, W, cv.height); g.arc(W / 2, cv.height / 2, 70, 0, 7, true); g.fill(); g.restore(); }
+  if (hp[k] < 30) { const a = 0.25 + 0.15 * Math.sin(now / 160); const gr = g.createRadialGradient(W / 2, cv.height / 2, cv.height * 0.35, W / 2, cv.height / 2, cv.height * 0.75);
+    gr.addColorStop(0, 'rgba(255,0,40,0)'); gr.addColorStop(1, `rgba(255,0,40,${a})`); g.fillStyle = gr; g.fillRect(0, 0, W, cv.height);
+    if (!run.hb || now - run.hb > 700) { run.hb = now; snd(55, 0.12, 'sine', 0.14); } }
+  const bar = (x, w, v, c, right) => { g.fillStyle = '#0d1424cc'; g.fillRect(x, 64, w, 22); g.fillStyle = c; const fw = w * Math.max(0, v) / 100; g.fillRect(right ? x + w - fw : x, 64, fw, 22); g.strokeStyle = '#ffffff55'; g.strokeRect(x, 64, w, 22); };
+  const bw = Math.min(420, W * 0.32); bar(24, bw, hp[k], hp[k] < 30 ? '#ff4d5e' : '#36d07a', false); bar(W - 24 - bw, bw, hp[1 - k], '#ff4d5e', true);
+  g.font = '800 15px Segoe UI'; g.textBaseline = 'top'; g.fillStyle = '#fff'; g.textAlign = 'left'; g.fillText(`${X.youHp} ${Math.max(0, hp[k])}`, 28, 90);
+  g.textAlign = 'right'; g.fillText(`${esc(DUEL.opp).slice(0, 16)} ${Math.max(0, hp[1 - k])}`, W - 28, 90);
+  if (d && d.k !== 'dgap') { g.fillStyle = '#ffc83d'; g.fillRect(W - 24 - bw, 110, bw * Math.max(0, Math.min(1, DUEL.prog)), 4); }
+  const behind = hp[k] - hp[1 - k]; if (behind < -10) { g.textAlign = 'left'; g.fillStyle = '#ff8a3d'; g.fillText(`${X.rage} x${(1 + 0.8 * Math.min(1, -behind / 50)).toFixed(2)}`, 28, 110); }
+  g.textAlign = 'center'; g.fillStyle = '#9aa4b8'; g.font = '700 16px Segoe UI'; const pk = d && d.k !== 'dgap' ? X.g[DUEL.form][d.pk] : '';
+  if (pk) g.fillText(X.round(d.ri + 1, pk) + (d.ri >= 10 ? '  ' + X.sd : ''), W / 2, 66);
+  g.textBaseline = 'middle';
+  // my progress to the opponent, 4 times a second; attacks I earn
+  if (mode !== 'aim' || !run.ds) return;
+  if (now - run.dlast > 250 && d && d.k !== 'dgap') { run.dlast = now; const s = run.ds;
+    dSend({t: 'p', v: d.k === 'track' || d.k === 'trace' ? s.on / Math.max(1, s.frames) : s.hits / Math.max(1, d.n)}); }
+  if (d && d.k !== 'dgap') { const s = run.ds, key = d.ri + ':';
+    const fire = kk => { if (run.dsent[key + kk]) return; run.dsent[key + kk] = 1; const k2 = kk.split('#')[0]; dSend({t: 'atk', k: k2}); run.flash = {t0: now, s: X.sent(k2), c: '#00d8ff'}; };
+    if ((d.k === 'flick' || d.k === 'draw') && run.combo >= 3) fire('shake#' + Math.floor(run.combo / 3));
+    if (d.k === 'react' && s.rts && s.rts.length && s.rts[s.rts.length - 1] < 200) fire('shake#' + s.rts.length);
+    if (d.k === 'track') { const w = Math.floor((now - s.t0) / 2000), c = run.dw;   // each 2 s held at 60%+ on target sends smoke
+      if (!c || c.ri !== d.ri) run.dw = {ri: d.ri, w, on: s.on, f: s.frames};
+      else if (w > c.w) { if ((s.on - c.on) / Math.max(1, s.frames - c.f) >= 0.6) fire('smoke#' + w); run.dw = {ri: d.ri, w, on: s.on, f: s.frames}; } } } }
+function duelShake(now) {   // the shake attack moves the view: an offset that is added and removed again, so it nets to zero
+  const want = DUEL.fx.shake && now < DUEL.fx.shake ? R(0.9) * Math.sin(now / 23) + R(0.5) * Math.sin(now / 37) : 0, was = run.dsh || 0;
+  cam.y += want - was; run.dsh = want; }
+function duelPause() { const X = DX();
+  show(`<h2>${X.pause}</h2><p class="dim">${X.pauseNote}</p><button id="go" onclick="duelResume()">${X.resume}</button><button class="alt" onclick="duelClose();endPlay(null)">${X.quit}</button>`); }
+async function duelResume() { if (!await lock()) return duelPause();
+  ui.style.display = 'none'; cv.style.display = c3.style.display = 'block'; hud.style.display = 'block'; mode = 'aim'; last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); }
+
+// ---- After the match ----
+function duelDone(res, why) { const X = DX(), P = me(), f = DUEL.form, s = nfOf(P, f), k = DUEL.k, hp = DUEL.hp, rds = Object.values(DUEL.rd);
+  const last = rds.filter(r => r.end !== undefined).pop(), forfeit = DUEL.left && !last, quit = !last && !DUEL.left;
+  const win = forfeit ? 1 : last ? (last.end === k ? 1 : last.end === -1 ? 0 : -1) : -1;
+  const meas = res.filter(r => r && r.dmeas && r.dv != null).map(r => r.dv);
+  if (!DUEL.sum) { s.m = s.m.concat(meas).slice(-15); if (win > 0) s.w++; else if (win < 0) s.l++;
+    const h = s.h[DUEL.opp] = s.h[DUEL.opp] || [0, 0]; if (win > 0) h[0]++; else if (win < 0) h[1]++; save(); }
+  const won = rds.filter(r => r.dmg[1 - k] > r.dmg[k]).length, lost = rds.filter(r => r.dmg[k] > r.dmg[1 - k]).length, R = formRank(P, f), h = s.h[DUEL.opp] || [0, 0];
+  DUEL.sum = {win}; if (quit) duelClose();
+  const fm = x => f === 'trace' ? Math.round(x * 100) + '%' : f === 'flick' ? x.toFixed(2) + ' s' : Math.round(x) + ' ms';
+  tune(win > 0 ? [523, 659, 784, 1047] : [392, 330, 262], 120, 0.3);
+  show(`<div class="tag">${X.f[f]} &middot; ${X.vs(esc(NAME || ''), esc(DUEL.opp))}</div><div class="${win > 0 ? 'clear' : win < 0 ? 'fail' : 'rank'}">${win > 0 ? X.win : win < 0 ? X.lose : X.draw}</div>
+    ${forfeit ? `<p>${X.forfeit}</p>` : ''}<p>${X.end(won, lost)} &middot; HP ${Math.max(0, hp[k])} - ${Math.max(0, hp[1 - k])}</p><p class="dim">${X.h2h(esc(DUEL.opp), h[0], h[1])}</p>
+    ${meas.length ? `<p class="dim">${X.mine}: ${meas.map(fm).join(', ')}</p>` : ''}
+    <p><b>${X.fpNow}:</b> ${R.need ? X.unr(R.need) : X.fp(R.fp, L.tiers[R.t], topTxt(R.top))}</p>
+    <p class="hype" id="dagain">${DUEL.oppAgain ? X.againAsk(esc(DUEL.opp)) : ''}</p>
+    ${DUEL.ws && !DUEL.left ? `<button id="go" onclick="DUEL.again=true;dSend({t:'again'});document.getElementById('dagain').textContent=DX().againWait(DUEL.opp)">${X.again}</button>` : ''}
+    <button class="alt" onclick="duelClose();duels()">${X.lobby}</button><button class="alt" onclick="duelClose();map()">${L.map}</button>`); }
+
+let DJ = location.hash.startsWith('#d=') ? location.hash.slice(3) : ''; if (DJ) history.replaceState(null, '', location.pathname);
 if (location.hash === '#sources') sources(); else intro();
 </script><script>function fit() { document.documentElement.style.setProperty('--z', Math.max(0.8, Math.min(1.5, innerWidth / 1500, innerHeight / 880)).toFixed(3)); } fit(); addEventListener('resize', fit);</script></body></html>
