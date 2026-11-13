@@ -39,6 +39,10 @@ select,input{background:#070b14;color:var(--txt);border:1px solid var(--line);bo
 .tile.r-white,.tile.r-white.lock,.tile.r-white b,.gxcard.r-white,.gxcard.r-white .dim,.gxcard.r-white .tag{color:#14161c;text-shadow:none}.tile.r-white .s{color:#a87400}
 .gxcard.r-white :is(p,h2,span,div):not(.clear):not(.fail){color:#14161c}.gxcard.r-white .dim{color:#3a3f4b}
 .rbadge{display:inline-block;padding:3px 12px;border-radius:999px;font-weight:700;font-size:13px;letter-spacing:.6px;text-transform:uppercase;border:1px solid #ffffff55;margin-right:6px}
+.rk7{display:grid;gap:10px;margin:12px 0}.rk7 .r{display:grid;grid-template-columns:150px 1fr 190px;gap:6px 18px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:14px 18px;background:linear-gradient(100deg,var(--c)22,transparent 60%)}
+.rk7 .r.lock{opacity:.72}.rk7 .r.me{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 0 28px var(--c)55;opacity:1}.rk7 h3{margin:0;font-size:22px;color:var(--c);letter-spacing:.04em}.rk7 .ep{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#ffffffa0}
+.rk7 .sh{font-size:20px;font-weight:700;text-align:right}.rk7 .sh small{display:block;font-size:12px;font-weight:400;color:#ffffffa0}.rk7 .you{grid-column:1/-1;font-weight:700;color:var(--c)}.rk7 .bar{height:6px;margin-top:4px}
+@media (max-width:760px){.rk7 .r{grid-template-columns:1fr}.rk7 .sh{text-align:left}}
 </style></head><body>
 <canvas id="c3"></canvas><canvas id="c"></canvas><div id="hud"></div><div id="perf"></div><div id="ui"></div>
 <script>
@@ -179,6 +183,27 @@ function rkScore(r) { const z = 0.2 * zOf(RK_RT, Math.max(80, Math.min(2000, r.r
 function rkWhy(r) { const v2 = r.v === 2, t = z => topTxt(1 - Phi(z));
   return L.rtWhy(t(zOf(RK_RT, Math.max(80, Math.min(2000, r.rt)), RK_RTZ)), t(zOf(v2 ? RK_FL : RK_FL1, Math.max(0.15, Math.min(10, r.fl)))), t(zOf(v2 ? RK_ON : RK_ON1, Math.max(0, Math.min(1, r.on))))) + ` &middot; <a href="#sources" onclick="sources();return false">${L.rtSrc}</a>`; }
 const topTxt = p => { p = Math.max(1e-4, p); const x = String(p < 0.01 ? (p * 100).toFixed(2) : p < 0.1 ? (p * 100).toFixed(1) : Math.round(p * 100)); return (LANG === 'hu' ? x.replace('.', ',') : x) + '%'; };
+const RK7 = {c: ['#8a8f9c', '#4fb3ff', '#3ddc84', '#f5d061', '#ff8a3d', '#ff3d6e', '#b46bff'], line: [[272, 0.76, 19], [233, 0.67, 28], [210, 0.62, 32], [195, 0.59, 36], [179, 0.55, 41], [157, 0.51, 54]],
+  en: {btn: 'Ranks', h: 'THE SEVEN RANKS', sub: 'Every rank is measured against real players: 70,940 Human Benchmark reaction results and over 78,000 KovaaK’s aim players. The share is how many players in the world reach it.',
+    top: p => p >= 99 ? 'Everyone' : `Top ${p}%`, low: 'Bottom 15%', val: v => `Valorant: ${v}`, line: l => `Line: ${l[0]} ms reaction &middot; ${l[1]} s per flick &middot; ${l[2]}% tracking`,
+    you: (p, n) => `YOU ARE HERE &middot; top ${p} of players` + (n ? ` &middot; next: ${n}` : ''), none: 'Take the Rank Trials to place yourself on this ladder.', note: 'Valorant ranks are the ones with the same share of players (valking.gg, June 2026). Your rank is aim alone, not game sense.',
+    ep: ['The Unawakened', 'The Awakened', 'The Blade', 'The Sharpshooter', 'Lord of the Lobby', 'One in Twenty', 'Pro Grade'],
+    d: ['Where every pro once started. The crosshair moves; the shots are still learning to land.', 'Better than the bottom 15%. Your hands know the basics; now they need speed.', 'Better than half of all players. Most public lobbies already fear the first shot.',
+      'Top 30%. Your flicks land where you look, and most of the server is slower than you.', 'Top 15%. You carry the lobbies you enter; few duels surprise you.', 'Top 5%. Tournament-ready mechanics. One player in twenty aims like this.', 'Top 0.5%. The aim of players paid to play. Few will ever stand here.'],
+    v: ['Iron to low Bronze', 'Bronze to Gold', 'Gold to Platinum', 'Platinum to Diamond', 'Diamond to Ascendant', 'Ascendant to Immortal', 'High Immortal to Radiant']},
+  hu: {btn: 'Rangok', h: 'A HÉT RANG', sub: 'Minden rangot valódi játékosokhoz mérünk: 70 940 Human Benchmark reakcióeredményhez és több mint 78 000 KovaaK’s játékoshoz. Az arány azt mutatja, a világ játékosainak mekkora része éri el.',
+    top: p => p >= 99 ? 'Mindenki' : `Legjobb ${String(p).replace('.', ',')}%`, low: 'Alsó 15%', val: v => `Valorant: ${v}`, line: l => `Határ: ${l[0]} ms reakció &middot; ${String(l[1]).replace('.', ',')} mp célravetés &middot; ${l[2]}% követés`,
+    you: (p, n) => `ITT VAGY &middot; a játékosok legjobb ${p}-a` + (n ? ` &middot; következő: ${n}` : ''), none: 'Csináld meg a Rangtesztet, hogy felkerülj erre a létrára.', note: 'A Valorant-rangok azok, amelyeket ugyanekkora arányú játékos ér el (valking.gg, 2026. június). A rangod csak a célzásról szól, nem a játékérzékről.',
+    ep: ['Az Ébredő', 'A Felébredt', 'A Penge', 'A Mesterlövész', 'A Lobby Ura', 'Húszból Egy', 'Profi Szint'],
+    d: ['Innen indult minden profi. A célkereszt mozog; a lövések még tanulnak célba érni.', 'Jobb vagy az alsó 15%-nál. A kezed tudja az alapokat; most gyorsaság kell.', 'Jobb vagy a játékosok felénél. A legtöbb nyilvános lobby már tart az első lövésedtől.',
+      'Legjobb 30%. A célravetésed oda talál, ahová nézel, és a szerver nagy része lassabb nálad.', 'Legjobb 15%. Te viszed a lobbykat; kevés párbaj lep meg.', 'Legjobb 5%. Versenyre kész mechanika. Húsz játékosból egy céloz így.', 'Legjobb 0,5%. Azok célzása, akiket fizetnek a játékért. Kevesen állnak majd itt.'],
+    v: ['Vas és alacsony Bronz', 'Bronz és Arany között', 'Arany és Platina között', 'Platina és Gyémánt között', 'Gyémánt és Felemelkedett között', 'Felemelkedett és Halhatatlan között', 'Magas Halhatatlan és Radiant']}};
+function ranks() { const R = RK7[LANG] || RK7.en, P = me(), b = bestRk(P), t = P ? tierOf(P) : -1, sh = [100, 85, 55, 30, 15, 5, 0.5];
+  const rows = L.tiers.map((x, i) => `<div class="r${i === t ? ' me' : i > t ? ' lock' : ''}" style="--c:${RK7.c[i]}"><div><div class="ep">${R.ep[i]}</div><h3>${x}</h3></div>
+    <div>${R.d[i]}<div class="dim">${R.val(R.v[i])}${i ? ' &middot; ' + R.line(RK7.line[i - 1]) : ''}</div></div><div class="sh">${i ? R.top(sh[i]) : R.low}</div>
+    ${i === t && b ? `<div class="you">${R.you(topTxt(rkScore(b).top), L.tiers[i + 1] || '')}</div>${i < 6 ? `<div class="bar" style="grid-column:1/-1"><div style="width:${Math.round(100 * Math.max(0, Math.min(1, (rkScore(b).z - (RK_Z[i - 1] ?? -2)) / (RK_Z[i] - (RK_Z[i - 1] ?? -2)))))}%;height:100%;background:var(--c)"></div></div>` : ''}` : ''}</div>`).reverse().join('');
+  show(`<div class="tag">${R.h}</div><p class="dim">${R.sub}</p>${b ? '' : `<p>${R.none}</p>`}<div class="rk7">${rows}</div><p class="dim">${R.note}</p>
+  <button id="go" onclick="map()">${L.map}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button>`); }
 const KEPT = {petra: 1};
 const bestRk = P => [P.rk, ...(P.hist || [])].filter(x => x && x.rt > 0 && x.fl > 0 && x.on >= 0).reduce((b, x) => !b || rkScore(x).z > rkScore(b).z ? x : b, null);
 function tierOf(P) { const k = KEPT[(NAME || '').toLowerCase()], b = bestRk(P); return Math.max(b ? rkScore(b).t : -1, k != null ? k : -1); }
@@ -189,7 +214,7 @@ function judgeRank(res, why) {
   const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), v: r.v, rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT, sd: run.sd, re: RR ? RR.at : undefined}]).slice(-40); if (!P.rk || sc.z > rkScore(P.rk).z) P.rk = r; P.rk = bestRk(P) || P.rk; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
   const b = rkScore(P.rk);
   show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${rkWhy(r)}</p>${RR ? cmpHtml(RR, r) : ''}<p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
-  ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
+  ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim" style="cursor:pointer" onclick="ranks()" title="${(RK7[LANG] || RK7.en).btn}">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
   ${CT ? `<button id="go" onclick="CT='';course()">${L.co.back}</button><button class="alt" onclick="rankTest()">${L.retry}</button>` : `<button id="go" onclick="rankTest()">${L.retry}</button>`}<button class="alt" onclick="CT='';map()">${L.map}</button>`);
 }
 const ptsOf = P => Object.keys(P.first).reduce((a, i) => a + Math.max(0, 10 * (P.stars[i] || 0) - 3 * (P.first[i] - 1)), 0);
@@ -220,7 +245,7 @@ const api = (path, body) => fetch(BOARD.replace(/\/$/, '') + path, {method: 'POS
   .then(r => r.json().then(o => (o.status = r.status, o)));
 function push(now) { clearTimeout(PUSH); if (!ONLINE || !DB[NAME]) return Promise.resolve(); const go = () => api('/save', {n: NAME, tok: TOKS[NAME], data: DB[NAME]}).catch(() => {});
   if (now) return go(); PUSH = setTimeout(go, 2500); return Promise.resolve(); }
-const tierHtml = P => { const t = tierOf(P); return t < 0 ? `<div class="hype" style="font-size:17px">${L.rtNone}</div>` : `<div class="rank" style="font-size:26px">${L.tier(L.tiers[t])}</div><div class="dim">${L.tiers.map((x, j) => j === t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div>`; };
+const tierHtml = P => { const t = tierOf(P); return t < 0 ? `<div class="hype" style="font-size:17px">${L.rtNone}</div>` : `<div class="rank" style="font-size:26px">${L.tier(L.tiers[t])}</div><div class="dim" style="cursor:pointer" onclick="ranks()" title="${(RK7[LANG] || RK7.en).btn}">${L.tiers.map((x, j) => j === t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div>`; };
 function save() { localStorage.egopub_players = JSON.stringify(DB); push(); }
 const ease = i => 1 + 0.1 * Math.min(3, Math.max(0, (me().fails[i] || 0) - 1));
 const rankOf = c => c ? RANKS[c - 1] : 300;
@@ -305,7 +330,7 @@ function map() {
     return `<div class="tile${open ? '' : ' lock'}${i === P.cleared ? ' next' : ''}" ${open ? `onclick="stageIntro(${i})"` : ''}>${L.stage(i + 1)}<b>${L.names[i]}</b><span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span></div>`; }).join('');
   rankPop(P); show(`<div class="tag">${NAME}</div>${tierHtml(P)}<div class="rank" id="sanct">${POS ? L.rank(POS) : ''}</div><p class="dim">${L.tierNote}</p><div class="rank" style="font-size:17px;color:var(--acc2)">${L.pts(ptsOf(P))}</div><div class="bar"><i style="width:${P.cleared / STAGES.length * 100}%"></i></div>${sensRow(P)}
   <div class="grid">${tiles}</div>${P.cleared >= STAGES.length ? `<h2 style="margin-top:18px;font-size:20px">${G().top}</h2><div class="grid">${genTiles(P)}</div>` : ""}
-  ${P.cleared >= STAGES.length ? `<button id="go" onclick="genIntro()">${G().btn(gxOf(P).n + 1)}</button>` : `<button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>`}<button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button><button class="alt" onclick="trials()">${L.ht.btn}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
+  ${P.cleared >= STAGES.length ? `<button id="go" onclick="genIntro()">${G().btn(gxOf(P).n + 1)}</button>` : `<button id="go" onclick="stageIntro(${nx})">${L.stage(nx + 1)}: ${L.names[nx]}</button>`}<button class="alt" onclick="course()">${L.co.go}</button><button class="alt" onclick="CT='';rankTest()">${L.rtGo}</button><button class="alt" onclick="trials()">${L.ht.btn}</button><button class="alt" onclick="ranks()">${(RK7[LANG] || RK7.en).btn}</button>${P.cleared ? `<button class="alt" id="shr" onclick="shareIt()">${L.share}</button>` : ''}<button class="alt" onclick="selStart()">${L.again}</button><button class="alt" onclick="MUTE=!MUTE;localStorage.ego_mute=MUTE?'1':'0';map()">${L.sound(MUTE)}</button><button class="alt" onclick="intro()">${L.home}</button><button class="alt" onclick="sources()">${L.srcBtn}</button>${boardHtml(P)}<div id="top10"></div>`); loadTop();
 }
 function goalText(i) {
   const s = STAGES[i], e = ease(i), d = s.d.map(x => scaled(x, e));
