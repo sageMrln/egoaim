@@ -47,7 +47,7 @@ select,input{background:#070b14;color:var(--txt);border:1px solid var(--line);bo
 .dform h3{margin:2px 0 6px;font-size:22px;color:var(--acc2)}.dform .ep{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#ffffffa0}.dform p{margin:6px 0}.dme{font-weight:700;margin:8px 0;color:var(--gold)}
 .dhead{display:flex;gap:14px;align-items:center}.demb{flex:none;filter:drop-shadow(0 0 10px #00d8ff40)}.dpath{margin:6px 0}.dpath .me{color:var(--gold);font-weight:700}.dtop{margin:8px 0;font-size:13px}.dform button{margin-top:8px}
 </style></head><body>
-<canvas id="c3"></canvas><canvas id="c"></canvas><div id="hud"></div><div style="position:fixed;left:10px;top:8px;z-index:9;font:600 12px Consolas,monospace;color:#c9a227">ASSIST TEST PAGE - Rank Trials here are blind helper trials, not ranked</div><div id="perf"></div><div id="ui"></div>
+<canvas id="c3"></canvas><canvas id="c"></canvas><div id="hud"></div><div style="position:fixed;left:10px;top:8px;z-index:9;font:600 12px Consolas,monospace;color:#c9a227">ASSIST TEST PAGE - Rank Trials here count for your rank; the helper is on in some of them (blind test)</div><div id="perf"></div><div id="ui"></div>
 <script>
 if (top !== self) top.location = self.location;
 'use strict';
@@ -224,15 +224,15 @@ const AS_EXP = 5, AS_PAIRS = 20, AS_N = AS_EXP + 2 * AS_PAIRS; let ASPR = 0;
 function asNext() { const done = JSON.parse(localStorage.ego_as_log || '[]').length; let q = JSON.parse(localStorage.ego_as_q || '[]');
   if (!q.length) { if (done < AS_EXP) q = [{a: 'on', pr: -1}]; else { const pr = +(localStorage.ego_as_pr || 0) + 1; localStorage.ego_as_pr = pr; q = (crypto.getRandomValues(new Uint8Array(1))[0] & 1 ? ['on', 'off'] : ['off', 'on']).map(a => ({a, pr})); } }
   const x = q.shift(); ASARM = x.a; ASPR = x.pr; localStorage.ego_as_q = JSON.stringify(q); localStorage.ego_as_cur = JSON.stringify(x); }
-let RR = null; function rankTest(sd) { if (!sd) RR = null; asNext(); play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6, near: 10, far: 45, even: 1}, {k: 'track', s: 20, r: 1.8, v: 1.3, sines: 1}], 'Assist Trials', me().sens, sd || crypto.getRandomValues(new Uint32Array(1))[0], judgeAssist); }
+let RR = null; function rankTest(sd) { if (!sd) RR = null; asNext(); play([{k: 'react', n: 5, r: 4}, {k: 'flick', n: 20, r: 1.6, near: 10, far: 45, even: 1}, {k: 'track', s: 20, r: 1.8, v: 1.3, sines: 1}], L.rt, me().sens, sd || crypto.getRandomValues(new Uint32Array(1))[0], judgeAssist); }
 function judgeAssist(res, why) { if (why) { localStorage.ego_as_q = JSON.stringify([JSON.parse(localStorage.ego_as_cur)].concat(JSON.parse(localStorage.ego_as_q || '[]'))); return show(`<div class="tag">Assist Trials</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button>`); }
   const a = res[0].rts.slice().sort((x, y) => x - y), log = JSON.parse(localStorage.ego_as_log || '[]');
   log.push({at: Date.now(), arm: ASARM, pr: ASPR, rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3), sens: +me().sens.toFixed(3)}); localStorage.ego_as_log = JSON.stringify(log);
-  show(`<div class="tag">Assist Trials</div><h2>Trial ${log.length} of ${AS_N} saved</h2><p>Tracking on target ${(100 * res[2].on).toFixed(1)}%. ${log.length <= AS_EXP ? `Getting used to the helper: ${log.length} of ${AS_EXP} (it is ON).` : 'Helper on or off is hidden until the test ends.'} Your rank is not touched.</p>${log.length >= AS_N ? '<p>Test complete. Tell Raphael.</p>' : ''}<button id="go" onclick="rankTest()">Next trial</button>`); }
+  judgeRank(res); ui.insertAdjacentHTML('afterbegin', `<p class="dim">Helper test: trial ${log.length} of ${AS_N}. ${log.length <= AS_EXP ? `Getting used to the helper (${log.length} of ${AS_EXP}, it is ON).` : 'Helper on or off is hidden until the test ends.'}${log.length >= AS_N ? ' Test complete. Tell Raphael.' : ''}</p>`); }
 function judgeRank(res, why) {
   if (why) return show(`<div class="tag">${L.rt}</div><div class="fail">${L.notYet}</div><p>${why}</p><button id="go" onclick="rankTest()">${L.retry}</button><button class="alt" onclick="map()">${L.map}</button>`);
   const a = res[0].rts.slice().sort((x, y) => x - y), r = {pf: perfNow(), rt: Math.round(a[a.length >> 1]), fl: +(res[1].time / res[1].n).toFixed(3), on: +res[2].on.toFixed(3), v: 2};
-  const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), v: r.v, rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT, sd: run.sd, re: RR ? RR.at : undefined}]).slice(-40); if (!RR && (!P.rk || sc.z > rkScore(P.rk).z)) P.rk = r; P.rk = bestRk(P) || null; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
+  const P = me(), sc = rkScore(r); P.hist = (P.hist || []).concat([{at: Date.now(), v: r.v, rt: r.rt, fl: r.fl, on: r.on, rts: res[0].rts.map(Math.round), fs: res[0].misses, sens: +P.sens.toFixed(3), g: GAMES[GAME][0], raw: RAW, ct: CT, sd: run.sd, re: RR ? RR.at : undefined, as: ASARM}]).slice(-40); if (!RR && (!P.rk || sc.z > rkScore(P.rk).z)) P.rk = r; P.rk = bestRk(P) || null; if (CT === 'A' || (CT === 'B' && !P.rkB)) P['rk' + CT] = r; save(); tune([523, 659, 784, 1047], 110, 0.3);
   const b = rkScore(P.rk);
   show(`<div class="tag">${L.rt}</div><div class="rank" style="font-size:44px">${L.tiers[sc.t]}</div><div class="hype">${L.rtTop(topTxt(sc.top))}</div><p>${L.rtRes(r.rt, r.fl.toFixed(2), pct(r.on))}</p><p class="dim">${rkWhy(r)}</p>${RR ? `<p class="dim">${L.ht.prac}</p>` + cmpHtml(RR, r) : ''}<p class="dim">${L.pf.setup}: ${perfTxt(r.pf)}. ${L.pf.note}</p>
   ${b.z > sc.z ? `<p class="dim">${L.rtBest(L.tiers[b.t], topTxt(b.top))}</p>` : ''}<div class="dim" style="cursor:pointer" onclick="ranks()" title="${(RK7[LANG] || RK7.en).btn}">${L.tiers.map((x, j) => j === b.t ? `<b style="color:var(--gold)">${x}</b>` : x).join(' &middot; ')}</div><p class="dim">${L.rtSub}</p>
@@ -968,7 +968,7 @@ function recFrame(now) { const r = run; if (r.rec.length > 9 * 144 * 150) return
 async function sendMotion(why) { const r = run; if (!ONLINE || !TOKS[NAME] || !r || r.rec.length < 9 * 30 || typeof CompressionStream === 'undefined') return;
   try { const z = new Uint8Array(await new Response(new Blob([new Float32Array(r.rec).buffer]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
     let s = ''; for (let i = 0; i < z.length; i += 8192) s += String.fromCharCode.apply(null, z.subarray(i, i + 8192));
-    const meta = {v: 1, sd: r.sd, label: r.label, k: r.drills.map(d => d.k), sens: r.sens, yaw: YAW, g: GAMES[GAME][0], raw: RAW, w: cv.width, h: cv.height, ended: why ? 1 : 0, as: ASARM, pr: ASPR, asp: AS_ARMS[ASARM],
+    const meta = {v: 1, sd: r.sd, label: r.label === L.rt ? 'Assist Trials' : r.label, k: r.drills.map(d => d.k), sens: r.sens, yaw: YAW, g: GAMES[GAME][0], raw: RAW, w: cv.width, h: cv.height, ended: why ? 1 : 0, as: ASARM, pr: ASPR, asp: AS_ARMS[ASARM],
       res: r.res.map(x => ({k: x.k, t: +(+x.time).toFixed(2), m: x.misses, on: +(+x.on).toFixed(3)}))};
     api('/motion', {n: NAME, tok: TOKS[NAME], meta, m: btoa(s)}).catch(() => {}); } catch (e) {} }
 
