@@ -220,7 +220,7 @@ const rkOwn = P => { const h = (P.hist || []).filter(x => x && !x.re), rr = (P.h
   return [k && !rr.some(x => x.rt === k.rt && x.fl === k.fl && x.on === k.on) ? k : null, ...h]; };
 const bestRk = P => rkOwn(P).filter(x => x && x.rt > 0 && x.fl > 0 && x.on >= 0).reduce((b, x) => !b || rkScore(x).z > rkScore(b).z ? x : b, null);
 function tierOf(P) { const k = KEPT[(NAME || '').toLowerCase()], b = bestRk(P); return Math.max(b ? rkScore(b).t : -1, k != null ? k : -1); }
-const AS_EXP = 10, AS_PAIRS = 40, AS_N = AS_EXP + 2 * AS_PAIRS; let ASPR = 0;
+const AS_EXP = 5, AS_PAIRS = 20, AS_N = AS_EXP + 2 * AS_PAIRS; let ASPR = 0;
 function asNext() { const done = JSON.parse(localStorage.ego_as_log || '[]').length; let q = JSON.parse(localStorage.ego_as_q || '[]');
   if (!q.length) { if (done < AS_EXP) q = [{a: 'on', pr: -1}]; else { const pr = +(localStorage.ego_as_pr || 0) + 1; localStorage.ego_as_pr = pr; q = (crypto.getRandomValues(new Uint8Array(1))[0] & 1 ? ['on', 'off'] : ['off', 'on']).map(a => ({a, pr})); } }
   const x = q.shift(); ASARM = x.a; ASPR = x.pr; localStorage.ego_as_q = JSON.stringify(q); localStorage.ego_as_cur = JSON.stringify(x); }
