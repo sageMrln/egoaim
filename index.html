@@ -172,7 +172,7 @@ const ui = document.getElementById('ui'), cv = document.getElementById('c'), hud
   g = GL ? cv.getContext('2d') : cv.getContext('2d', {desynchronized: true, alpha: false});
 const DB = JSON.parse(localStorage.egopub_players || '{}');
 let NAME = localStorage.ego_name || '', RAW = false, MUTE = localStorage.ego_mute === '1';
-function me() { const P = DB[NAME] = DB[NAME] || {sens: START_SENS, stars: {}, cleared: 0, fails: {}, sel: [], day: '', today: 0}; P.tries = P.tries || {}; P.first = P.first || {}; return P; }
+function me() { const P = DB[NAME] = DB[NAME] || {sens: START_SENS, stars: {}, cleared: 0, fails: {}, sel: [], day: '', today: 0}; P.tries = P.tries || {}; P.first = P.first || {}; for (const i in P.stars) if (!(i in P.first)) P.first[i] = P.tries[i] || 1; return P; }
 const RK_Z = [-0.825, -0.100, 0.417, 0.825, 1.309, 2.051], RK_SD = 0.796;
 const RK_PZ = [3.09, 2.326, 1.645, 1.282, 0.674, 0, -0.674, -1.282, -2.326];
 const RK_RT = [125, 150, 175, 200, 225, 250, 275, 300, 350, 400, 500, 700], RK_RTZ = [3.054, 2.295, 1.435, 0.66, 0.073, -0.442, -0.873, -1.21, -1.635, -1.897, -2.212, -2.631];
